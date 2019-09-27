@@ -1,9 +1,9 @@
-from ..user_roles import anonymous_user, authenticated_user, bumblebee_user
-from unittest import TestCase
+from v1_0.user_roles import anonymous_user, authenticated_user, bumblebee_user
+import unittest
     
 bibcodes = ["1980ApJS...44..169S","1980ApJS...44..193S"]
 
-class CitationHelperServiceTest(TestCase):    
+class CitationHelperServiceTest(unittest.TestCase):    
     def test_anonymous_user(self):
         # Request all metrics for two existing bibcodes
         r = anonymous_user.post('/citation_helper', json={'bibcodes': bibcodes})
@@ -25,3 +25,7 @@ class CitationHelperServiceTest(TestCase):
     
     def test_bumblebee_user(self):
         self.test_authenticated_user(user=bumblebee_user)
+
+
+if __name__ == '__main__':
+    unittest.main()

@@ -1,9 +1,9 @@
-from ..user_roles import anonymous_user, authenticated_user, bumblebee_user
-from unittest import TestCase
+from v1_0.user_roles import anonymous_user, authenticated_user, bumblebee_user
+import unittest
     
 bibcode = '1995ApJ...447L..37W'
     
-class GraphicsServiceTest(TestCase):
+class GraphicsServiceTest(unittest.TestCase):
     def test_anonymous_user(self):
         # Try to get graphics info for an existing bibcode
         r = anonymous_user.get('/graphics/%s'%bibcode)
@@ -51,3 +51,7 @@ class GraphicsServiceTest(TestCase):
     
     def test_bumblebee_user(self):
         self.test_authenticated_user(user=bumblebee_user)
+
+
+if __name__ == '__main__':
+    unittest.main()

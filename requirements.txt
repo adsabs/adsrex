@@ -1,3 +1,8 @@
-nose
 requests
+mock
+httpretty
+coveralls
 pytest
+coverage
+pytest-cov
+git+https://github.com/adsabs/ADSMicroserviceUtils.git@v1.0.15

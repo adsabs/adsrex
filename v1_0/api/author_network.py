@@ -1,21 +1,25 @@
-from ..user_roles import anonymous_user, authenticated_user, bumblebee_user
-from unittest import TestCase
+from v1_0.user_roles import anonymous_user, authenticated_user, bumblebee_user
+import unittest
+import json
     
 # We will do all tests for the famous author A. Accomazzi
 params = {}
 params['q'] = 'author:"Accomazzi,A"'
 
-class AuthorNetworkTest(TestCase):
+class AuthorNetworkTest(unittest.TestCase):
     def test_anonymous_user(self):
         # Get the author network
         r = anonymous_user.get('/vis/author-network', params=params)
-        # We should get a 401 back
+        # method not allowed
+        self.assertEqual(r.status_code, 405)
+        
+        r = anonymous_user.post('/vis/author-network', data=params)
         self.assertEqual(r.status_code, 401)
 
     def check_author_network(self, user=authenticated_user):
         ## Examine the paper network
         # Retrieve results for our query in 'params'
-        r = user.get('/vis/author-network', params=params)
+        r = user.post('/vis/author-network', json={'query': [json.dumps(params)]}) ### XXX:rca vis-service is very weird in what it expects
         # We should get a 200 back
         self.assertEqual(r.status_code, 200)
         # Now we'll test the contents of what was sent back
@@ -57,3 +61,6 @@ class AuthorNetworkTest(TestCase):
 
     def test_bumblebee_user(self):
         self.check_author_network(user=bumblebee_user)
+
+if __name__ == '__main__':
+    unittest.main()
