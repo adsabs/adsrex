@@ -1,21 +1,23 @@
-from ..user_roles import anonymous_user, authenticated_user, bumblebee_user
+from v1_0.user_roles import anonymous_user, authenticated_user, bumblebee_user
 from unittest import TestCase
+import unittest
+import json
     
 # We will do all tests for the famous author A. Accomazzi
 params = {}
 params['q'] = 'author:"Accomazzi,A"'
 
-class PaperNetworkTest(TestCase):
+class PaperNetworkTest(unittest.TestCase):
     def test_anonymous_user(self):
         # Try to get the paper network
-        r = anonymous_user.get('/vis/paper-network', params=params)
+        r = anonymous_user.post('/vis/paper-network', data=params)
         # We should get a 401 back
         self.assertEqual(r.status_code, 401)
 
     def check_paper_network(self, user=authenticated_user):
         ## Examine the paper network
         # Retrieve results for our query in 'params'
-        r = user.get('/vis/paper-network', params=params)
+        r = user.post('/vis/paper-network', json={'query': [json.dumps(params)]})
         # We should get a 200 back
         self.assertEqual(r.status_code, 200)
         # Now we'll test the contents of what was sent back
@@ -67,3 +69,8 @@ class PaperNetworkTest(TestCase):
 
     def test_bumblebee_user(self):
         self.check_paper_network(user=bumblebee_user)
+        
+
+
+if __name__ == '__main__':
+    unittest.main()

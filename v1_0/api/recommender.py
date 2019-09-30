@@ -1,9 +1,9 @@
-from ..user_roles import anonymous_user, authenticated_user, bumblebee_user
-from unittest import TestCase
+from v1_0.user_roles import anonymous_user, authenticated_user, bumblebee_user
+import unittest
     
 bibcode = '2010MNRAS.409.1719J'
     
-class RecommenderServiceTest(TestCase):
+class RecommenderServiceTest(unittest.TestCase):
     def test_anonymous_user(self):
         # Try to get graphics info for an existing bibcode
         r = anonymous_user.get('/recommender/%s'%bibcode)
@@ -41,3 +41,6 @@ class RecommenderServiceTest(TestCase):
     
     def test_bumblebee_user(self):
         self.test_authenticated_user(user=bumblebee_user)
+        
+if __name__ == '__main__':
+    unittest.main()

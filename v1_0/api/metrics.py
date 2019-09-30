@@ -1,9 +1,9 @@
-from ..user_roles import anonymous_user, authenticated_user, bumblebee_user
-from unittest import TestCase
+from v1_0.user_roles import anonymous_user, authenticated_user, bumblebee_user
+import unittest
     
 bibcodes = ['1993CoPhC..74..239H','1994GPC.....9...69H']
 
-class MetricsServiceTest(TestCase):    
+class MetricsServiceTest(unittest.TestCase):    
     def test_anonymous_user(self):
         # Request all metrics for two existing bibcodes
         r = anonymous_user.post('/metrics', json={'bibcodes': bibcodes})
@@ -50,33 +50,29 @@ class MetricsServiceTest(TestCase):
         expected_stats = {
             'indicators': [u'g', u'read10', u'm', u'i10', u'riq', u'h', u'i100', u'tori'],
             'indicators refereed': [u'g', u'read10', u'm', u'i10', u'riq', u'h', u'i100', u'tori'],
-            'basic stats': [u'median number of downloads', u'average number of reads',
-                            u'normalized paper count', u'recent number of reads', u'number of papers',
-                            u'recent number of downloads', u'total number of reads',
-                            u'median number of reads', u'total number of downloads',
-                            u'average number of downloads'],
+            'basic stats': [u'average number of downloads', u'average number of reads', u'median number of downloads', u'median number of reads', 
+                            u'normalized paper count', u'number of papers', u'recent number of downloads', u'recent number of reads',
+                            u'total number of downloads', u'total number of reads'],
             'basic stats refereed': [u'median number of downloads', u'average number of reads',
                             u'normalized paper count', u'recent number of reads', u'number of papers',
                             u'recent number of downloads', u'total number of reads',
                             u'median number of reads', u'total number of downloads',
                             u'average number of downloads'],
-            'citation stats': [u'normalized number of citations', u'average number of refereed citations',
-                               u'median number of citations', u'median number of refereed citations',
-                               u'number of citing papers', u'average number of citations',
-                               u'total number of refereed citations',
-                               u'normalized number of refereed citations',
-                               u'number of self-citations', u'total number of citations'],
-            'citation stats refereed': [u'normalized number of citations',
-                               u'average number of refereed citations',
-                               u'median number of citations', u'median number of refereed citations',
-                               u'number of citing papers', u'average number of citations',
-                               u'total number of refereed citations',
-                               u'normalized number of refereed citations',
-                               u'number of self-citations', u'total number of citations'],
+            'citation stats': [u'average number of citations', u'average number of refereed citations', u'median number of citations', 
+                               u'median number of refereed citations', u'normalized number of citations', u'normalized number of refereed citations', 
+                               u'number of citing papers', u'number of self-citations', u'self-citations', u'total number of citations', 
+                               u'total number of refereed citations'],
+            'citation stats refereed': 
+                               [u'normalized number of citations', u'average number of refereed citations', 
+                                u'median number of citations', u'median number of refereed citations', 
+                                u'number of citing papers', u'average number of citations', 
+                                u'total number of refereed citations', u'normalized number of refereed citations', 
+                                u'number of self-citations', u'total number of citations'],
+                               
             'time series': [u'g', u'h', u'tori', u'i10', u'read10', u'i100']        
         }
         for entry in expected_stats:
-            self.assertItemsEqual(r.json()[entry].keys(), expected_stats[entry])
+            self.assertListEqual(sorted(r.json()[entry].keys()), sorted(expected_stats[entry]))#, 'Wrong values for "%s, got: %s"' % (entry, r.json()[entry].keys()))
         # There should be no skipped bibcodes
         self.assertListEqual(r.json()['skipped bibcodes'], [])
         # Sending an empty list of bibcodes to the service should give a 403
@@ -93,3 +89,8 @@ class MetricsServiceTest(TestCase):
     
     def test_bumblebee_user(self):
         self.test_authenticated_user(user=bumblebee_user)
+
+
+
+if __name__ == '__main__':
+    unittest.main()
