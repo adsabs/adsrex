@@ -279,7 +279,7 @@ class CitationHelperServiceTest(unittest.TestCase):
             assert r.json()['access_token'] == b['access_token']
             
         for x in xrange(5):
-            r = authenticated_user.get('/accounts/bootstrap', params=params, headers={'Authorization': 'Bearer %s' % a['access_token']})
+            r = authenticated_user.get('/accounts/bootstrap', params=params)
             assert r.json()['access_token'] == a['access_token']
             
             
