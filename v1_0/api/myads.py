@@ -57,7 +57,7 @@ class TestIt(unittest.TestCase):
         assert r.json()['responseHeader']['params']['fl'] == 'id'
         assert r.json()['responseHeader']['params']['x-amzn-trace-id']
         assert r.json()['response']
-        self.assertAlmostEqual(r.json()['response']['numFound'], int(numFound), delta=10000)
+        self.assertAlmostEqual(r.json()['response']['numFound'], int(numFound), delta=100000)
         
         r = authenticated_user.get('/vault/execute_query/%s?fl=recid' % qid)
         assert r.status_code == 200
