@@ -47,6 +47,7 @@ class BaseUser(object):
         if hasattr(self, 'cookie') and self.cookie:
             if not kwargs.get('cookies', None):
                 kwargs['cookie'] = self.cookie
+        kwargs.setdefault('allow_redirects', False)
         return kwargs
     
     def get_config(self, name):
