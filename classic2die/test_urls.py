@@ -16,23 +16,32 @@ class TestPatterns(unittest.TestCase):
     def xtest_authenticated_user(self):
         self.check_urls(user=authenticated_user_classic)
         
-    def assertRedirected(self, user, r, target):
-        self.assertEquals(r.status_code, 302)
+    def assertRedirected(self, user, r, target, code=302):
+        self.assertEquals(r.status_code, code)
         self.assertTrue('Location' in r.headers)
         expected = '%s/%s' % (user.get_config('BBB_URL'), target)
         u = urlparse(expected)
         expected = u.geturl().replace(u.path, u.path.replace('//', '/'))
         self.assertEquals(r.headers['Location'], expected)
+    
+    def p(self, r):
+        print 'url', r.url
+        print 'status', r.status_code
+        for x in sorted(r.headers.items(), key=lambda x:x[0]):
+            print x[0], x[1]
+        print 'text', r.text[0:100].replace('\n', '\\n')
+        print 'len', len(r.text)
+            
         
     @property
     def cache(self):
-        if os.path.exists('classic2die.cache') and  '--lf' in sys.argv or '--last-failed' in sys.argv:
+        if os.path.exists('classic2die.cache'):
             with open('classic2die.cache', 'rb') as f:
                 return pickle.load(f)
         return {'finished': {}}
     
     def persist_cache(self, cache):
-        with open('classic2die', 'wb') as fo:
+        with open('classic2die.cache', 'wb') as fo:
             pickle.dump(cache, fo)
         
     def check_urls(self, user=anonymous_user_classic):
@@ -45,12 +54,15 @@ class TestPatterns(unittest.TestCase):
                 if m.startswith('url_'):
                     key = '%s%s' % (str(user.__class__), m)
                     if key in cache['finished']:
-                        print 'skipping %s (already finished)' % (m)
+                        print 'skipping %s (already ran with result: %s)' % (m, cache['finished'][key])
                         continue
 
                     getattr(self, m)(user=user)
                     cache['finished'][key] = True
         finally:
+            if 'last-failed' in cache and cache['last-failed'] == key:
+                cache['finished'][key] = False
+            cache['last-failed'] = key
             self.persist_cache(cache)
 
         
@@ -87,7 +99,7 @@ class TestPatterns(unittest.TestCase):
         #TODO: what should happen if resource exists on both sites? like favicon.ico here?
     
     
-    def xurl_003(self, user=anonymous_user_classic):
+    def url_003(self, user=anonymous_user_classic):
         """
         (003) /full/<3/19/16> freq=1149235 (internal traffic: 0.99, orig_status=200)
         """
@@ -98,7 +110,7 @@ class TestPatterns(unittest.TestCase):
         
     
     
-    def xurl_004(self, user=anonymous_user_classic):
+    def url_004(self, user=anonymous_user_classic):
         """
         (004) /cgi-bin/nph-data_query?<params> freq=955869 (internal traffic: 0.71, orig_status=200)
         """
@@ -110,7 +122,7 @@ class TestPatterns(unittest.TestCase):
         self.assertTrue('<a href="https://arxiv.org/abs/1210.0085">https://arxiv.org/abs/1210.0085</a>' in r.text)
     
     
-    def xurl_005(self, user=anonymous_user_classic):
+    def url_005(self, user=anonymous_user_classic):
         """
         (005) /cgi-bin/nph-abs_connect?<params> freq=729533 (internal traffic: 0.77, orig_status=200)
         """
@@ -135,7 +147,7 @@ class TestPatterns(unittest.TestCase):
         self.assertTrue('0803983468' in r.text) # fails
     
     
-    def xurl_006(self, user=anonymous_user_classic):
+    def url_006(self, user=anonymous_user_classic):
         """
         (006) /full/<10/4/5/4/0/24> freq=724223 (internal traffic: 0.99, orig_status=200)
         """
@@ -143,7 +155,7 @@ class TestPatterns(unittest.TestCase):
         self.assertEquals(r.status_code, 200) # fails, tries to redirect to http://articles.adsabs.harvard.edu//full/'
     
     
-    def xurl_007(self, user=anonymous_user_classic):
+    def url_007(self, user=anonymous_user_classic):
         """
         (007) /full/<6/4/5/4/0/24> freq=723631 (internal traffic: 0.99, orig_status=200)
         """
@@ -160,7 +172,7 @@ class TestPatterns(unittest.TestCase):
         self.assertTrue('http://articles.adsabs.harvard.edu/seri/ESASP/0371//1995ESASP.371...79M.html' in r.text)
     
     
-    def xurl_009(self, user=anonymous_user_classic):
+    def url_009(self, user=anonymous_user_classic):
         """
         (009) /doi/<7/6> freq=387419 (internal traffic: 0.02, orig_status=200)
         """
@@ -176,7 +188,7 @@ class TestPatterns(unittest.TestCase):
         """
         r = user.get('/full/1951C&T....67....1B/0000008.000.html')
         self.assertEquals(r.status_code, 200)
-        self.assertTrue('<frame src="http://articles.adsabs.harvard.edu/full/gif/1951C%26T....67....1B/0000001.000.html" name="gif">' in r.text)
+        self.assertTrue('<frame src="http://articles.adsabs.harvard.edu/full/gif/1951C%26T....67....1B/0000008.000.html" name="gif">' in r.text)
     
     
     def url_011(self, user=anonymous_user_classic):
@@ -184,8 +196,19 @@ class TestPatterns(unittest.TestCase):
         (011) /abstract_service.html freq=319857 (internal traffic: 0.15, orig_status=200)
         """
         r = user.get('/abstract_service.html')
+        self.assertRedirected(user, r, '/classic-form') # for AA: should be '/classic-form/'
+        
+        # TODO: remove once above is fixed
+        r = user.get(r.headers['Location'])
+        # SBC: request to https://dev.adsabs.harvard.edu/classic-form
+        # gets redirected to http://dev.adsabs.harvard.edu/classic-form/
+        # note the wrong protocol
+        
+        self.assertRedirected(user, r, '/classic-form/', 301) # fails, https != http
+        
+        r = user.get(r.headers['Location'])
         self.assertEquals(r.status_code, 200)
-    
+        
     
     def url_012(self, user=anonymous_user_classic):
         """
@@ -193,30 +216,36 @@ class TestPatterns(unittest.TestCase):
         """
         r = user.get('/cgi-bin/nph-iarticle_query?1951C%26T....67....1B&defaultprint=YES&page_ind=6&filetype=.pdf')
         self.assertEquals(r.status_code, 200)
+        self.assertEquals(r.headers['Content-Type'], 'application/pdf')
     
     
     def url_013(self, user=anonymous_user_classic):
         """
         (013) /cgi-bin/nph-ref_query?<params> freq=310869 (internal traffic: 0.32, orig_status=200)
         """
+        # AA: should this not be translated? i think we can handle it
         r = user.get('/cgi-bin/nph-ref_query?bibcode=2012PhPl...19h2902W&amp;refs=CITATIONS&amp;db_key=PHY')
         self.assertEquals(r.status_code, 200)
-    
+        self.assertEquals(r.headers['Content-Type'], 'text/html; charset=ISO-8859-1')
+        
     
     def url_014(self, user=anonymous_user_classic):
         """
         (014) /cgi-bin/t2png?<params> freq=238054 (internal traffic: 1.00, orig_status=304)
         """
         r = user.get('/cgi-bin/t2png?bg=%23FFFFFF&/conf/foap./2007/200/0000579.000&db_key=AST&bits=3&scale=8&filetype=.jpg')
-        self.assertEquals(r.status_code, 304)
+        self.assertEquals(r.status_code, 200)
+        self.assertTrue(r.headers['Content-Type'], 'image/jpeg')
     
     
     def url_015(self, user=anonymous_user_classic):
         """
         (015) / freq=225000 (internal traffic: 0.14, orig_status=200)
         """
+        # for AA: this displays the classic form, shouldn't it redirect to BBB?
         r = user.get('/')
         self.assertEquals(r.status_code, 200)
+        self.assertEquals(r.headers['Content-Type'], 'text/html; charset=UTF-8')
     
     
     def url_016(self, user=anonymous_user_classic):
@@ -224,7 +253,8 @@ class TestPatterns(unittest.TestCase):
         (016) /cgi-bin/basic_connect?<params> freq=163385 (internal traffic: 0.59, orig_status=200)
         """
         r = user.get('/cgi-bin/basic_connect?qsearch=Dr+James+Webb&version=1')
-        self.assertEquals(r.status_code, 200)
+        # for AA: it does not redirecto to tugboat
+        self.assertRedirected(user, r, '/tugboat/classicSearchRedirect?qsearch=Dr+James+Webb&version=1') # fails
     
     
     def url_017(self, user=anonymous_user_classic):
@@ -232,6 +262,7 @@ class TestPatterns(unittest.TestCase):
         (017) /figs/newlogo.gif freq=135019 (internal traffic: 0.85, orig_status=200)
         """
         r = user.get('/figs/newlogo.gif')
+        self.p(r)
         self.assertEquals(r.status_code, 200)
     
     
