@@ -104,8 +104,6 @@ class TestPatterns(unittest.TestCase):
         (003) /full/<3/19/16> freq=1149235 (internal traffic: 0.99, orig_status=200)
         """
         r = user.get('/full/gif/1988ApJ...329L..57T/L000057.000.html')
-        
-        # ERROR: currently redirects
         self.assertEquals(r.status_code, 200)
         
     
@@ -152,7 +150,7 @@ class TestPatterns(unittest.TestCase):
         (006) /full/<10/4/5/4/0/24> freq=724223 (internal traffic: 0.99, orig_status=200)
         """
         r = user.get('/full/thumbnails/seri/ApJ../0329//1988ApJ...329L..57T.html')
-        self.assertEquals(r.status_code, 200) # fails, tries to redirect to http://articles.adsabs.harvard.edu//full/'
+        self.assertEquals(r.status_code, 200)
     
     
     def url_007(self, user=anonymous_user_classic):
@@ -160,7 +158,7 @@ class TestPatterns(unittest.TestCase):
         (007) /full/<6/4/5/4/0/24> freq=723631 (internal traffic: 0.99, orig_status=200)
         """
         r = user.get('/full/record/seri/ApJ../0329//1988ApJ...329L..57T.html')
-        self.assertEquals(r.status_code, 200) # fails, it is trying 302 to http://articles.adsabs.harvard.edu//full/
+        self.assertEquals(r.status_code, 200)
     
     
     def url_008(self, user=anonymous_user_classic):
@@ -177,9 +175,7 @@ class TestPatterns(unittest.TestCase):
         (009) /doi/<7/6> freq=387419 (internal traffic: 0.02, orig_status=200)
         """
         r = user.get('/doi/10.1086/177092')
-        self.assertEquals(r.status_code, 200)
-        
-        self.assertRedirected(user, r, '/abs/10.1086/177092') #fails: it sends to https://dev.adsabs.harvard.edu/abs/10.1086
+        self.assertRedirected(user, r, '/abs/10.1086/177092')
     
     
     def url_010(self, user=anonymous_user_classic):
