@@ -249,7 +249,7 @@ class TestPatterns(unittest.TestCase):
         (016) /cgi-bin/basic_connect?<params> freq=163385 (internal traffic: 0.59, orig_status=200)
         """
         r = user.get('/cgi-bin/basic_connect?qsearch=Dr+James+Webb&version=1')
-        # for AA: it does not redirecto to tugboat
+        # for AA: it does not redirect to to tugboat
         self.assertRedirected(user, r, '/tugboat/classicSearchRedirect?qsearch=Dr+James+Webb&version=1') # fails
     
     
@@ -258,7 +258,6 @@ class TestPatterns(unittest.TestCase):
         (017) /figs/newlogo.gif freq=135019 (internal traffic: 0.85, orig_status=200)
         """
         r = user.get('/figs/newlogo.gif')
-        self.p(r)
         self.assertEquals(r.status_code, 200)
     
     
@@ -267,8 +266,9 @@ class TestPatterns(unittest.TestCase):
         (018) /abs_doc/classic_form_analytics.js freq=122442 (internal traffic: 0.99, orig_status=200)
         """
         r = user.get('/abs_doc/classic_form_analytics.js')
+        self.p(r)
         self.assertEquals(r.status_code, 200)
-    
+        self.assertEquals(r.headers['Content-Type'], 'text/javascript')
     
     def url_019(self, user=anonymous_user_classic):
         """
