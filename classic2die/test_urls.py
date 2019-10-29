@@ -457,6 +457,7 @@ class TestPatterns(unittest.TestCase):
         """
         r = user.get('/figs/adslogo.gif')
         self.assertEquals(r.status_code, 200)
+        self.assertEquals(r.headers['Content-Type'], 'image/gif')
     
     
     def url_032(self, user=anonymous_user_classic):
@@ -465,14 +466,31 @@ class TestPatterns(unittest.TestCase):
         """
         r = user.get('/ads_abstracts.html')
         self.assertEquals(r.status_code, 200)
+        self.assertEquals(r.headers['Content-Type'], 'text/html; charset=UTF-8')
     
     
     def url_033(self, user=anonymous_user_classic):
         """
         (033) /cgi-bin/bib_query?<params> freq=49817 (internal traffic: 0.11, orig_status=200)
         """
+        
+        # AA, SBC: this is correct, it shows arxiv id
+        # resolved to a bibcode, which then gets (incorrectly)
+        # resolved into a canonical bibcode (but each hop 302)
+        # we should use 301 (moved permanently) where possible
+        # and perhaps avoid one jump for crawlers
+        
         r = user.get('/cgi-bin/bib_query?arXiv:1511.06066')
+        
+        self.assertRedirected(user, r, '/abs/arXiv:1511.06066')
+        
+        r = user.head(r.headers['Location'])
+        self.assertRedirected(user, r, '/abs/2015arXiv151106066W/abstract') # fails, redirects to 'http://'
+        
+        r = user.head(r.headers['Location'])
         self.assertEquals(r.status_code, 200)
+        self.assertEquals(r.headers['Content-Type'], 'text/html; charset=utf-8')
+        
     
     
     def url_034(self, user=anonymous_user_classic):
@@ -481,6 +499,7 @@ class TestPatterns(unittest.TestCase):
         """
         r = user.get('/figs/xml.gif')
         self.assertEquals(r.status_code, 200)
+        self.assertEquals(r.headers['Content-Type'], 'image/gif')
     
     
     def url_035(self, user=anonymous_user_classic):
@@ -489,6 +508,7 @@ class TestPatterns(unittest.TestCase):
         """
         r = user.options('*')
         self.assertEquals(r.status_code, 200)
+        self.assertEquals(r.headers['Allow'], 'GET,HEAD,POST,OPTIONS,TRACE')
     
     
     def url_036(self, user=anonymous_user_classic):
@@ -497,14 +517,41 @@ class TestPatterns(unittest.TestCase):
         """
         r = user.get('/cgi-bin/nph-basic_connect?qsearch=10%2E1021%2Facs%2Ejcim%2E9b00620&start_nr=0&nr_to_return=30&sort=SCORE&data_type=XML&version=1')
         self.assertEquals(r.status_code, 200)
+        self.assertEquals(r.headers['Content-Type'], 'text/xml')
+        self.assertTrue('<?xml' in r.text)
     
     
     def url_037(self, user=anonymous_user_classic):
         """
         (037) /cgi-bin/nph-basic_connect freq=44468 (internal traffic: 1.00, orig_status=200)
         """
-        r = user.post('/cgi-bin/nph-basic_connect')
+        r = user.post('/cgi-bin/nph-basic_connect', data={'data_type': ['XML'],
+         'nr_to_return': ['30'],
+         'qsearch': ['10.1021/acs.jcim.9b00620'],
+         'sort': ['SCORE'],
+         'start_nr': ['0'],
+         'version': ['1']})
         self.assertEquals(r.status_code, 200)
+        self.assertEquals(r.headers['Content-Type'], 'text/xml') # AA: it returns html instead of XML
+        
+        r = user.post('/cgi-bin/nph-basic_connect', data={'data_type': ['HTM'],
+         'nr_to_return': ['30'],
+         'qsearch': ['10.1021/acs.jcim.9b00620'],
+         'sort': ['SCORE'],
+         'start_nr': ['0'],
+         'version': ['1']})
+        self.assertRedirected(user, r, '/tugboat/classicSearchRedirect?sort=SCORE&nr_to_return=30&data_type=HTM&qsearch=10.1021%2Facs.jcim.9b00620&start_nr=0&version=1')
+        
+        # GS: https -> http
+        r = user.head(r.headers['Location'])
+        self.assertRedirected(user, r, '/search/q=doi%3A%2210.1021%2Facs.jcim.9b00620%22&sort=date%20desc%2C%20bibcode%20desc&rows=30&start=0&format=HTM&unprocessed_parameter=All%20object%20queries%20include%20SIMBAD%20and%20NED%20search%20results.&unprocessed_parameter=Please%20note%20Min%20Score%20is%20deprecated.&unprocessed_parameter=All%20object%20queries%20include%20SIMBAD%20and%20NED%20search%20results.&unprocessed_parameter=Use%20For%20Weighting&unprocessed_parameter=Relative%20Weights&unprocessed_parameter=Weighted%20Scoring&unprocessed_parameter=Synonym%20Replacement/') # fails 'http://'
+        
+        r = user.head(r.headers['Location'])
+        self.assertEquals(r.status_code, 200)
+        self.assertEquals(r.headers['Content-Type'], 'text/html; charset=utf-8')
+        
+        
+        
     
     
     def url_038(self, user=anonymous_user_classic):
@@ -513,6 +560,7 @@ class TestPatterns(unittest.TestCase):
         """
         r = user.get('/figs/addtomyyahoo.gif')
         self.assertEquals(r.status_code, 200)
+        self.assertEquals(r.headers['Content-Type'], 'image/gif')
     
     
     def url_039(self, user=anonymous_user_classic):
@@ -521,6 +569,8 @@ class TestPatterns(unittest.TestCase):
         """
         r = user.get('/cgi-bin/exec_myads2?id=372349790&db_key=DAILY_PRE&rss=2.1')
         self.assertEquals(r.status_code, 200)
+        self.assertEquals(r.headers['Content-Type'], 'application/rss+xml')
+        self.assertTrue('<?xml' in r.text)
     
     
     def url_040(self, user=anonymous_user_classic):
@@ -529,6 +579,7 @@ class TestPatterns(unittest.TestCase):
         """
         r = user.get('/figs/nasalogo_med.png')
         self.assertEquals(r.status_code, 200)
+        self.assertEquals(r.headers['Content-Type'], 'image/png')
     
     
     def url_041(self, user=anonymous_user_classic):
@@ -537,6 +588,7 @@ class TestPatterns(unittest.TestCase):
         """
         r = user.get('/figs/si_logo.gif')
         self.assertEquals(r.status_code, 200)
+        self.assertEquals(r.headers['Content-Type'], 'image/gif')
     
     
     def url_042(self, user=anonymous_user_classic):
@@ -545,6 +597,7 @@ class TestPatterns(unittest.TestCase):
         """
         r = user.get('/abs_doc/ads.css')
         self.assertEquals(r.status_code, 200)
+        self.assertEquals(r.headers['Content-Type'], 'text/css')
     
     
     def url_043(self, user=anonymous_user_classic):
@@ -553,6 +606,7 @@ class TestPatterns(unittest.TestCase):
         """
         r = user.get('/figs/myadslogo.gif')
         self.assertEquals(r.status_code, 200)
+        self.assertEquals(r.headers['Content-Type'], 'image/gif')
     
     
     def url_044(self, user=anonymous_user_classic):
@@ -560,15 +614,20 @@ class TestPatterns(unittest.TestCase):
         (044) /abs/<19> freq=29979 (internal traffic: 0.01, orig_status=302)
         """
         r = user.get('/abs/2010AAS...21545104O')
-        self.assertEquals(r.status_code, 302)
-    
+        self.p(r)
+        self.assertRedirected(user, r, '/abs/2010AAS...21545104O')
+        
+        r = user.head(r.headers['Location'])
+        self.assertEquals(r.status_code, 200)
+        self.assertEquals(r.headers['Content-Type'], 'text/html; charset=utf-8')
     
     def url_045(self, user=anonymous_user_classic):
         """
         (045) /favicon.ico freq=28792 (internal traffic: 0.51, orig_status=304)
         """
         r = user.get('/favicon.ico')
-        self.assertEquals(r.status_code, 304)
+        self.assertEquals(r.status_code, 200)
+        self.assertEquals(r.headers['Content-Type'], 'image/vnd.microsoft.icon')
     
     
     def url_046(self, user=anonymous_user_classic):
@@ -577,7 +636,8 @@ class TestPatterns(unittest.TestCase):
         """
         r = user.get('/full/seri/JRASC/0103//0000066.000.html')
         self.assertEquals(r.status_code, 200)
-    
+        self.assertEquals(r.headers['Content-Type'], 'text/html; charset=ISO-8859-1')
+        self.assertTrue('<frameset' in r.text)
     
     def url_047(self, user=anonymous_user_classic):
         """
@@ -585,7 +645,7 @@ class TestPatterns(unittest.TestCase):
         """
         r = user.get('/articles/abstracts/1976/ApJ../1976ApJ...203..297S.gif')
         self.assertEquals(r.status_code, 200)
-    
+        self.assertEquals(r.headers['Content-Type'], 'image/gif')
     
     def url_048(self, user=anonymous_user_classic):
         """
@@ -593,6 +653,8 @@ class TestPatterns(unittest.TestCase):
         """
         r = user.get('/cgi-bin/exec_myads2/all?id=316154300&db_key=DAILY_PRE&rss=2.1')
         self.assertEquals(r.status_code, 200)
+        self.assertEquals(r.headers['Content-Type'], 'application/rss+xml')
+        self.assertTrue('<?xml' in r.text)
     
     
     def url_049(self, user=anonymous_user_classic):
@@ -600,15 +662,22 @@ class TestPatterns(unittest.TestCase):
         (049) /cgi-bin/basic_connect?<params> freq=13172 (internal traffic: 0.01, orig_status=302)
         """
         r = user.get('/cgi-bin/basic_connect?qsearch=Shankland%2C+p&amp;version=1')
-        self.assertEquals(r.status_code, 302)
-    
+        self.assertRedirected(user, r, '/tugboat/classicSearchRedirect?qsearch=Shankland%2C+p&amp;version=1')
+        
+        r = user.head(r.headers['Location'])
+        self.assertRedirected(user, r, '/search/q=Shankland%2C+p&sort=date%20desc%2C%20bibcode%20desc&unprocessed_parameter=All%20object%20queries%20include%20SIMBAD%20and%20NED%20search%20results.&unprocessed_parameter=Please%20note%20Min%20Score%20is%20deprecated.&unprocessed_parameter=Selected%20data%20format%20was%20ignored%20please%20select%20export%20function%20here.&unprocessed_parameter=All%20object%20queries%20include%20SIMBAD%20and%20NED%20search%20results.&unprocessed_parameter=Use%20For%20Weighting&unprocessed_parameter=Relative%20Weights&unprocessed_parameter=Weighted%20Scoring&unprocessed_parameter=Synonym%20Replacement/')
+        
+        r = user.head(r.headers['Location'])
+        self.assertEquals(r.status_code, 200)
+        self.assertEquals(r.headers['Content-Type'], 'text/html; charset=utf-8')
+        
     
     def url_050(self, user=anonymous_user_classic):
         """
         (050) /physics_service.html freq=10911 (internal traffic: 0.63, orig_status=200)
         """
         r = user.get('/physics_service.html')
-        self.assertEquals(r.status_code, 200)
+        self.assertRedirected(user, r, '/classic-form/')
     
     
     def url_051(self, user=anonymous_user_classic):
