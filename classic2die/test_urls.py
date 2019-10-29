@@ -295,7 +295,10 @@ class TestPatterns(unittest.TestCase):
         (021) /pdf<0/19> freq=103256 (internal traffic: 0.04, orig_status=200)
         """
         r = user.get('/pdf/1990ApJ...359..267K')
+        # AA legacy returns 400, while classic has 200
         self.assertEquals(r.status_code, 200)
+        # AA: classic is however wrong, in the header it says it's html where in fact it is PDF...
+        self.assertEquals(r.headers['Content-Type'], 'text/html; charset=UTF-8')
     
     
     def url_022(self, user=anonymous_user_classic):
@@ -304,6 +307,7 @@ class TestPatterns(unittest.TestCase):
         """
         r = user.get('/figs/cfalogo.gif')
         self.assertEquals(r.status_code, 200)
+        self.assertEquals(r.headers['Content-Type'], 'image/gif')
     
     
     def url_023(self, user=anonymous_user_classic):
@@ -312,6 +316,7 @@ class TestPatterns(unittest.TestCase):
         """
         r = user.get('/figs/nasalogo.gif')
         self.assertEquals(r.status_code, 200)
+        self.assertEquals(r.headers['Content-Type'], 'image/gif')
     
     
     def url_024(self, user=anonymous_user_classic):
@@ -319,23 +324,50 @@ class TestPatterns(unittest.TestCase):
         (024) /cgi-bin/nph-ref_history?<params> freq=87250 (internal traffic: 0.91, orig_status=200)
         """
         r = user.get('/cgi-bin/nph-ref_history?refs=AR&bibcode=2019arXiv190900340K')
+        self.assertRedirected(user, r, '/abs/2019arXiv190900340K/metrics')
+        
+        # AA, SBC: this is interesting; the paper in question doesn't have metrics
+        # Core returns 400 and default bbb page, which loads the abstract and switches
+        # to a canonical bibcode (2019ApJ...884..122K)
+        r = user.get(r.headers['Location'])
+        self.assertEquals(r.status_code, 404)
+        self.assertEquals(r.headers['Content-Type'], 'text/html; charset=utf-8')
+        self.assertTrue('<title>Not found - NASA/ADS</title>' in r.text) # plain bbb
+        
+        
+        # if however, we use a bibcode which has metrics, then the following happens
+        # IMO it is correct behaviour, but I just want to make sure I understand
+        # Core must be contacting metrics service before it responds with 200/400
+        # is that correct SBC?
+        
+        r = user.get('/cgi-bin/nph-ref_history?refs=AR&bibcode=1968JAP....39.3798K')
+        self.assertRedirected(user, r, '/abs/1968JAP....39.3798K/metrics')
+        r = user.get(r.headers['Location'])
         self.assertEquals(r.status_code, 200)
-    
+        self.assertEquals(r.headers['Content-Type'], 'text/html; charset=utf-8')
+        self.assertTrue('Powder Technique for the Evaluation of Nonlinear Optical Materials' in r.text)
     
     def url_025(self, user=anonymous_user_classic):
         """
         (025) /abs/<19> freq=81913 (internal traffic: 0.14, orig_status=200)
         """
         r = user.head('/abs/2019A&A...622A.193A')
+        self.assertRedirected(user, r, '/abs/2019A&A...622A.193A')
+        
+        r = user.head(r.headers['Location'])
         self.assertEquals(r.status_code, 200)
+        
     
     
     def url_026(self, user=anonymous_user_classic):
         """
         (026) /cgi-bin/nph-manage_account?<params> freq=80016 (internal traffic: 0.40, orig_status=200)
         """
+        
+        # should still be operational
         r = user.get('/cgi-bin/nph-manage_account?man_cmd=login&man_url=http://adsabs.harvard.edu/cgi-bin/nph-manage%5faccount%3fman%5fcmd%3dlogin%26man%5furl%3dhttp%3a//adsabs.harvard.edu/abs/2017Sci...357..687T')
         self.assertEquals(r.status_code, 200)
+        self.assertEquals(r.headers['Content-Type'], 'text/html; charset=ISO-8859-1')
     
     
     def url_027(self, user=anonymous_user_classic):
@@ -343,15 +375,32 @@ class TestPatterns(unittest.TestCase):
         (027) /cgi-bin/access_denied freq=78455 (internal traffic: 0.53, orig_status=403)
         """
         r = user.get('/cgi-bin/access_denied')
-        self.assertEquals(r.status_code, 403)
-    
+        # RC - todo: front-server responds with 403; once the site activated, switch to this:
+        # self.assertEquals(r.status_code, 403)
+        self.assertEquals(r.status_code, 200)
+        self.assertTrue('ADS access denied' in r.text)
     
     def url_028(self, user=anonymous_user_classic):
         """
         (028) /cgi-bin/author_form?<params> freq=78371 (internal traffic: 0.73, orig_status=200)
         """
+        # AA: currently, this is not redirected (which is exptected, I belive); however the following
+        # subpage probably should be: http://adsabs.harvard.edu/cgi-bin/nph-abs_connect?return_req=no_params&author=Mattor,%20Nathan&db_key=PHY
         r = user.get('/cgi-bin/author_form?author=Mattor,+N&fullauthor=Mattor,%20Nathan&charset=UTF-8&db_key=PHY')
         self.assertEquals(r.status_code, 200)
+        self.assertTrue('<title>Author Information Form</title>' in r.text)
+        
+        r = user.get('/nph-abs_connect?return_req=no_params&author=Mattor,%20Nathan&db_key=PHY')
+        self.assertRedirected(user, r, '/tugboat/classicSearchRedirect?return_req=no_params&author=Mattor,%20Nathan&db_key=PHY') # fails right now...
+        
+        r = user.head(r.headers['Location'])
+        self.assertEquals(r.status_code, 200)
+        
+        
+        # AA: on the author page, I discovered the following search (different domain) - will it stay? is there something
+        # else important on `ads.harvard.edu`?
+        
+        #http://ads.harvard.edu/cgi-bin/search_persons.sh?cases=ignore&words=substring&fuzzy=exact&name=Mattor,%20N
     
     
     def url_029(self, user=anonymous_user_classic):
@@ -359,16 +408,48 @@ class TestPatterns(unittest.TestCase):
         (029) /cgi-bin/nph-bib_query?<params> freq=75411 (internal traffic: 0.68, orig_status=200)
         """
         r = user.get('/cgi-bin/nph-bib_query?bibcode=2019arXiv190502773B&data_type=BIBTEX&db_key=PRE&nocookieset=1')
+        self.assertRedirected(user, r, '/abs/2019arXiv190502773B?db_key=PRE&data_type=BIBTEX&nocookieset=1')
+        
+        r = user.head(r.headers['Location'])
         self.assertEquals(r.status_code, 200)
+        self.assertEquals(r.headers['Content-Type'], 'text/html; charset=utf-8')
     
     
     def url_030(self, user=anonymous_user_classic):
         """
         (030) /cgi-bin/nph-abs_connect freq=70251 (internal traffic: 0.96, orig_status=200)
         """
-        r = user.post('/cgi-bin/nph-abs_connect')
+        
+        r = user.post('/cgi-bin/nph-abs_connect', data={'aut_logic': ['OR'],
+         'aut_xct': ['YES'],
+         'author': ['Douglas, A. Vibert\r\nDouglas, A. V.'],
+         'db_key': ['AST', 'PHY'],
+         'end_year': ['1982'],
+         'ned_query': ['YES'],
+         'obj_logic': ['OR'],
+         'sim_query': ['YES']})
+        self.assertRedirected(user, r, '/tugboat/classicSearchRedirect?aut_logic=OR&ned_query=YES&db_key=AST&db_key=PHY&author=Douglas%2C+A.+Vibert%0D%0ADouglas%2C+A.+V.&aut_xct=YES&end_year=1982&sim_query=YES&obj_logic=OR')
+        
+        r = user.get(r.headers['Location'])
+        
+        # GS: tugboat is redirecting to 'http://....' (should be 'https://')
+        self.assertRedirected(user, r, '/search/filter_database_fq_database%3DOR%26filter_database_fq_database%3Ddatabase:%22astronomy%22%26filter_database_fq_database%3Ddatabase:%22physics%22%26q%3D%3Dauthor%3A%28%22Douglas%2C%20A.%20Vibert%22%20AND%20%22Douglas%2C%20A.%20V.%22%29%20AND%20pubdate%3A%5B%2A%20TO%201982-12%5D%26fq%3D%7B%21type%3Daqp%20v%3D%24fq_database%7D%26fq_database%3D%28database%3A%22astronomy%22%20OR%20database%3A%22physics%22%29%26sort%3Ddate%20desc%2C%20bibcode%20desc%26warning_message%3DAUTHOR_ANDED_WARNING%26unprocessed_parameter%3DPlease%20note%20Min%20Score%20is%20deprecated.%26unprocessed_parameter%3DSelected%20data%20format%20was%20ignored%20please%20select%20export%20function%20here.%26unprocessed_parameter%3DUse%20For%20Weighting%26unprocessed_parameter%3DRelative%20Weights%26unprocessed_parameter%3DWeighted%20Scoring%26unprocessed_parameter%3DSynonym%20Replacement%26unprocessed_parameter%3DParameters%20not%20processed%3A%20obj_logic/')
+
+        # AA, GS: the query above is rewritten as `=author:("Douglas, A. Vibert" AND "Douglas, A. V.") AND pubdate:[* TO 1982-12]`
+        # which finds 0 results because of the 'AND' between author names
+        r = user.head(r.headers['Location'])
         self.assertEquals(r.status_code, 200)
-    
+        self.assertEquals(r.headers['Content-Type'], 'text/html; charset=utf-8')
+        
+                  
+        # AA: when no parameters are present I believe it should just show the /classic-form (both GET/POST)
+        r = user.get('/cgi-bin/nph-abs_connect')
+        self.assertRedirected(user, r, '/classic-form/') # fails now
+        
+        r = user.post('/cgi-bin/nph-abs_connect')
+        self.assertRedirected(user, r, '/classic-form/') # fails now
+        
+        
     
     def url_031(self, user=anonymous_user_classic):
         """

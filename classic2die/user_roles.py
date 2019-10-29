@@ -23,6 +23,9 @@ class BaseUser(object):
     def options(self, *args, **kwargs):
         return requests.options(*self.update_args(args), **self.update_kwargs(kwargs))
     
+    def head(self, *args, **kwargs):
+        return requests.head(*self.update_args(args), **self.update_kwargs(kwargs))
+    
     def update_args(self, args):
         args = list(args)
         if len(args) > 0:
