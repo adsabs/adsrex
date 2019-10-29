@@ -19,7 +19,7 @@ class TestPatterns(unittest.TestCase):
     def assertRedirected(self, user, r, target, code=302):
         self.assertEquals(r.status_code, code)
         self.assertTrue('Location' in r.headers)
-        expected = '%s/%s' % (user.get_config('BBB_URL'), target)
+        expected = '%s%s' % (user.get_config('BBB_URL'), target)
         u = urlparse(expected)
         expected = u.geturl().replace(u.path, u.path.replace('//', '/'))
         self.assertEquals(r.headers['Location'], expected)
@@ -192,18 +192,15 @@ class TestPatterns(unittest.TestCase):
         (011) /abstract_service.html freq=319857 (internal traffic: 0.15, orig_status=200)
         """
         r = user.get('/abstract_service.html')
-        self.assertRedirected(user, r, '/classic-form') # for AA: should be '/classic-form/'
+        self.assertRedirected(user, r, '/classic-form/')
         
-        # TODO: remove once above is fixed
-        r = user.get(r.headers['Location'])
         # SBC: request to https://dev.adsabs.harvard.edu/classic-form
         # gets redirected to http://dev.adsabs.harvard.edu/classic-form/
         # note the wrong protocol
         
-        self.assertRedirected(user, r, '/classic-form/', 301) # fails, https != http
-        
         r = user.get(r.headers['Location'])
         self.assertEquals(r.status_code, 200)
+        self.assertEquals(r.headers['Content-Type'], 'text/html')
         
     
     def url_012(self, user=anonymous_user_classic):
@@ -219,10 +216,13 @@ class TestPatterns(unittest.TestCase):
         """
         (013) /cgi-bin/nph-ref_query?<params> freq=310869 (internal traffic: 0.32, orig_status=200)
         """
-        # AA: should this not be translated? i think we can handle it
         r = user.get('/cgi-bin/nph-ref_query?bibcode=2012PhPl...19h2902W&amp;refs=CITATIONS&amp;db_key=PHY')
+        self.assertRedirected(user, r, '/abs/2012PhPl...19h2902W/citations')
+        
+        r = user.get(r.headers['Location'])
         self.assertEquals(r.status_code, 200)
-        self.assertEquals(r.headers['Content-Type'], 'text/html; charset=ISO-8859-1')
+        self.assertTrue('Resonant wave-particle interactions' in r.text)
+        
         
     
     def url_014(self, user=anonymous_user_classic):
@@ -240,8 +240,11 @@ class TestPatterns(unittest.TestCase):
         """
         # for AA: this displays the classic form, shouldn't it redirect to BBB?
         r = user.get('/')
+        self.assertRedirected(user, r, '')
+        
+        r = user.get(r.headers['Location'])
         self.assertEquals(r.status_code, 200)
-        self.assertEquals(r.headers['Content-Type'], 'text/html; charset=UTF-8')
+        self.assertTrue(r.headers['Content-Type'], 'text/html')
     
     
     def url_016(self, user=anonymous_user_classic):
@@ -266,7 +269,6 @@ class TestPatterns(unittest.TestCase):
         (018) /abs_doc/classic_form_analytics.js freq=122442 (internal traffic: 0.99, orig_status=200)
         """
         r = user.get('/abs_doc/classic_form_analytics.js')
-        self.p(r)
         self.assertEquals(r.status_code, 200)
         self.assertEquals(r.headers['Content-Type'], 'text/javascript')
     
@@ -276,7 +278,8 @@ class TestPatterns(unittest.TestCase):
         """
         r = user.get('/figs/dot.gif')
         self.assertEquals(r.status_code, 200)
-    
+        self.assertEquals(r.headers['Content-Type'], 'image/gif')
+        
     
     def url_020(self, user=anonymous_user_classic):
         """
@@ -284,7 +287,8 @@ class TestPatterns(unittest.TestCase):
         """
         r = user.get('/figs/newlogo_small.gif')
         self.assertEquals(r.status_code, 200)
-    
+        self.assertEquals(r.headers['Content-Type'], 'image/gif')
+        
     
     def url_021(self, user=anonymous_user_classic):
         """
