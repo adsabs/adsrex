@@ -195,9 +195,6 @@ class TestPatterns(unittest.TestCase):
         r = user.get('/abstract_service.html')
         self.assertRedirected(user, r, '/classic-form/')
         
-        # SBC: request to https://dev.adsabs.harvard.edu/classic-form
-        # gets redirected to http://dev.adsabs.harvard.edu/classic-form/
-        # note the wrong protocol
         
         r = user.get(r.headers['Location'])
         self.assertEquals(r.status_code, 200)
