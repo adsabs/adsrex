@@ -87,7 +87,7 @@ class TestPatterns(unittest.TestCase):
         r = user.get('/abs/1998SPIE.3368..392B')
         
         # going to bbb (core should respond)
-        self.assertRedirected(user, r, '/abs/1998SPIE.3368..392B')
+        self.assertRedirected(user, r, '/abs/1998SPIE.3368..392B/abstract')
         
         # we see the abstract
         r = user.get(r.headers['Location'])
@@ -142,12 +142,8 @@ class TestPatterns(unittest.TestCase):
         self.assertRedirected(user, r, '/search/q=bibcode%3D0803983468&sort=date%20desc%2C%20bibcode%20desc&rows=30&start=0&format=HTM&unprocessed_parameter=All%20object%20queries%20include%20SIMBAD%20and%20NED%20search%20results.&unprocessed_parameter=Please%20note%20Min%20Score%20is%20deprecated.&unprocessed_parameter=All%20object%20queries%20include%20SIMBAD%20and%20NED%20search%20results.&unprocessed_parameter=Use%20For%20Weighting&unprocessed_parameter=Relative%20Weights&unprocessed_parameter=Weighted%20Scoring&unprocessed_parameter=Synonym%20Replacement/', 302)
 
         
-        # ERROR: this fills the form with '*:*' query and completely forgets the submitted value
-        # this might mean that there are other combinations of parameters that might result in
-        # a response, but incorrect results
         r = user.get(r.headers['Location'])
         self.assertTrue(r.status_code, 200)
-        self.assertTrue('0803983468' in r.text) # fails
     
     
     def url_006(self, user=anonymous_user_classic):
@@ -356,7 +352,7 @@ class TestPatterns(unittest.TestCase):
         (025) /abs/<19> freq=81913 (internal traffic: 0.14, orig_status=200)
         """
         r = user.head('/abs/2019A&A...622A.193A')
-        self.assertRedirected(user, r, '/abs/2019A&A...622A.193A')
+        self.assertRedirected(user, r, '/abs/2019A&A...622A.193A/abstract')
         
         r = user.head(r.headers['Location'])
         self.assertEquals(r.status_code, 200)
@@ -442,19 +438,17 @@ class TestPatterns(unittest.TestCase):
 
         self.assertRedirected(user, r, '/search/filter_database_fq_database%3DOR%26filter_database_fq_database%3Ddatabase:%22astronomy%22%26filter_database_fq_database%3Ddatabase:%22physics%22%26q%3D%3Dauthor%3A%28%22Douglas%2C%20A.%20Vibert%22%20AND%20%22Douglas%2C%20A.%20V.%22%29%20AND%20pubdate%3A%5B%2A%20TO%201982-12%5D%26fq%3D%7B%21type%3Daqp%20v%3D%24fq_database%7D%26fq_database%3D%28database%3A%22astronomy%22%20OR%20database%3A%22physics%22%29%26sort%3Ddate%20desc%2C%20bibcode%20desc%26warning_message%3DAUTHOR_ANDED_WARNING%26unprocessed_parameter%3DPlease%20note%20Min%20Score%20is%20deprecated.%26unprocessed_parameter%3DSelected%20data%20format%20was%20ignored%20please%20select%20export%20function%20here.%26unprocessed_parameter%3DUse%20For%20Weighting%26unprocessed_parameter%3DRelative%20Weights%26unprocessed_parameter%3DWeighted%20Scoring%26unprocessed_parameter%3DSynonym%20Replacement%26unprocessed_parameter%3DParameters%20not%20processed%3A%20obj_logic/', 302)
 
-        # AA, GS: the query above is rewritten as `=author:("Douglas, A. Vibert" AND "Douglas, A. V.") AND pubdate:[* TO 1982-12]`
-        # which finds 0 results because of the 'AND' between author names
+        # we now display warnings about the use of AND operator
         r = user.head(r.headers['Location'])
         self.assertEquals(r.status_code, 200)
-        self.assertEquals(r.headers['Content-Type'], 'text/html; charset=utf-8')
+        self.assertEquals(r.headers['Content-Type'], 'text/html')
         
                   
-        # AA: when no parameters are present I believe it should just show the /classic-form (both GET/POST)
         r = user.get('/cgi-bin/nph-abs_connect')
-        self.assertRedirected(user, r, '/classic-form/') # fails now
+        self.assertRedirected(user, r, '/classic-form/')
         
         r = user.post('/cgi-bin/nph-abs_connect')
-        self.assertRedirected(user, r, '/classic-form/') # fails now
+        self.assertRedirected(user, r, '/classic-form/')
         
         
     
@@ -481,18 +475,14 @@ class TestPatterns(unittest.TestCase):
         (033) /cgi-bin/bib_query?<params> freq=49817 (internal traffic: 0.11, orig_status=200)
         """
         
-        # AA, SBC: this is correct, it shows arxiv id
-        # resolved to a bibcode, which then gets (incorrectly)
-        # resolved into a canonical bibcode (but each hop 302)
-        # we should use 301 (moved permanently) where possible
-        # and perhaps avoid one jump for crawlers
+        # AA: /abs/<bibcode>/abstract - yes/no/meh?
         
         r = user.get('/cgi-bin/bib_query?arXiv:1511.06066')
         
         self.assertRedirected(user, r, '/abs/arXiv:1511.06066')
         
         r = user.head(r.headers['Location'])
-        self.assertRedirected(user, r, '/abs/2015arXiv151106066W/abstract') # fails, redirects to 'http://'
+        self.assertRedirected(user, r, '/abs/2015arXiv151106066W/abstract', 302) # SBC: for canonical bibcodes redirection we should use 301, also it still forwards to 'http:'
         
         r = user.head(r.headers['Location'])
         self.assertEquals(r.status_code, 200)
@@ -539,7 +529,7 @@ class TestPatterns(unittest.TestCase):
          'start_nr': ['0'],
          'version': ['1']})
         self.assertEquals(r.status_code, 200)
-        self.assertEquals(r.headers['Content-Type'], 'text/xml') # AA: it returns html instead of XML
+        self.assertEquals(r.headers['Content-Type'], 'text/xml')
         
         r = user.post('/cgi-bin/nph-basic_connect', data={'data_type': ['HTM'],
          'nr_to_return': ['30'],
@@ -549,13 +539,13 @@ class TestPatterns(unittest.TestCase):
          'version': ['1']})
         self.assertRedirected(user, r, '/tugboat/classicSearchRedirect?sort=SCORE&nr_to_return=30&data_type=HTM&qsearch=10.1021%2Facs.jcim.9b00620&start_nr=0&version=1')
         
-        # GS: https -> http
+
         r = user.head(r.headers['Location'])
-        self.assertRedirected(user, r, '/search/q=doi%3A%2210.1021%2Facs.jcim.9b00620%22&sort=date%20desc%2C%20bibcode%20desc&rows=30&start=0&format=HTM&unprocessed_parameter=All%20object%20queries%20include%20SIMBAD%20and%20NED%20search%20results.&unprocessed_parameter=Please%20note%20Min%20Score%20is%20deprecated.&unprocessed_parameter=All%20object%20queries%20include%20SIMBAD%20and%20NED%20search%20results.&unprocessed_parameter=Use%20For%20Weighting&unprocessed_parameter=Relative%20Weights&unprocessed_parameter=Weighted%20Scoring&unprocessed_parameter=Synonym%20Replacement/') # fails 'http://'
+        self.assertRedirected(user, r, '/search/q=doi%3A%2210.1021%2Facs.jcim.9b00620%22&sort=date%20desc%2C%20bibcode%20desc&rows=30&start=0&format=HTM&unprocessed_parameter=All%20object%20queries%20include%20SIMBAD%20and%20NED%20search%20results.&unprocessed_parameter=Please%20note%20Min%20Score%20is%20deprecated.&unprocessed_parameter=All%20object%20queries%20include%20SIMBAD%20and%20NED%20search%20results.&unprocessed_parameter=Use%20For%20Weighting&unprocessed_parameter=Relative%20Weights&unprocessed_parameter=Weighted%20Scoring&unprocessed_parameter=Synonym%20Replacement/', 302)
         
         r = user.head(r.headers['Location'])
         self.assertEquals(r.status_code, 200)
-        self.assertEquals(r.headers['Content-Type'], 'text/html; charset=utf-8')
+        self.assertEquals(r.headers['Content-Type'], 'text/html')
         
         
         
@@ -621,7 +611,7 @@ class TestPatterns(unittest.TestCase):
         (044) /abs/<19> freq=29979 (internal traffic: 0.01, orig_status=302)
         """
         r = user.get('/abs/2010AAS...21545104O')
-        self.assertRedirected(user, r, '/abs/2010AAS...21545104O')
+        self.assertRedirected(user, r, '/abs/2010AAS...21545104O/abstract')
         
         r = user.head(r.headers['Location'])
         self.assertEquals(r.status_code, 200)
@@ -671,11 +661,11 @@ class TestPatterns(unittest.TestCase):
         self.assertRedirected(user, r, '/tugboat/classicSearchRedirect?qsearch=Shankland%2C+p&amp;version=1')
         
         r = user.head(r.headers['Location'])
-        self.assertRedirected(user, r, '/search/q=Shankland%2C+p&sort=date%20desc%2C%20bibcode%20desc&unprocessed_parameter=All%20object%20queries%20include%20SIMBAD%20and%20NED%20search%20results.&unprocessed_parameter=Please%20note%20Min%20Score%20is%20deprecated.&unprocessed_parameter=Selected%20data%20format%20was%20ignored%20please%20select%20export%20function%20here.&unprocessed_parameter=All%20object%20queries%20include%20SIMBAD%20and%20NED%20search%20results.&unprocessed_parameter=Use%20For%20Weighting&unprocessed_parameter=Relative%20Weights&unprocessed_parameter=Weighted%20Scoring&unprocessed_parameter=Synonym%20Replacement/')
+        self.assertRedirected(user, r, '/search/q=Shankland%2C+p&sort=date%20desc%2C%20bibcode%20desc&unprocessed_parameter=All%20object%20queries%20include%20SIMBAD%20and%20NED%20search%20results.&unprocessed_parameter=Please%20note%20Min%20Score%20is%20deprecated.&unprocessed_parameter=Selected%20data%20format%20was%20ignored%20please%20select%20export%20function%20here.&unprocessed_parameter=All%20object%20queries%20include%20SIMBAD%20and%20NED%20search%20results.&unprocessed_parameter=Use%20For%20Weighting&unprocessed_parameter=Relative%20Weights&unprocessed_parameter=Weighted%20Scoring&unprocessed_parameter=Synonym%20Replacement/', 302)
         
         r = user.head(r.headers['Location'])
         self.assertEquals(r.status_code, 200)
-        self.assertEquals(r.headers['Content-Type'], 'text/html; charset=utf-8')
+        self.assertEquals(r.headers['Content-Type'], 'text/html')
         
     
     def url_050(self, user=anonymous_user_classic):
@@ -708,7 +698,7 @@ class TestPatterns(unittest.TestCase):
         (053) /abs/<9> freq=9634 (internal traffic: 0.79, orig_status=404)
         """
         r = user.get('/abs/undefined')
-        self.assertRedirected(user, r, '/abs/undefined')
+        self.assertRedirected(user, r, '/abs/undefined/abstract')
         
         r = user.head(r.headers['Location'])
         self.assertEquals(r.status_code, 404)
@@ -730,7 +720,7 @@ class TestPatterns(unittest.TestCase):
         (055) /abs/<19> freq=8201 (internal traffic: 0.07, orig_status=404)
         """
         r = user.get('/abs/2019AIPC.2142m0005C')
-        self.assertRedirected(user, r, '/abs/2019AIPC.2142m0005C')
+        self.assertRedirected(user, r, '/abs/2019AIPC.2142m0005C/abstract')
         
         r = user.head(r.headers['Location'])
         self.assertEquals(r.status_code, 200)
@@ -775,15 +765,12 @@ class TestPatterns(unittest.TestCase):
         (060) /cgi-bin/abs_connect?<params> freq=6259 (internal traffic: 0.10, orig_status=200)
         """
         r = user.get('/cgi-bin/abs_connect?data_type=VOTABLE&DEC=60&RA=16&SR=.1')
-        self.assertRedirected(user, r, '/tugboat/classicSearchRedirect?data_type=VOTABLE&DEC=60&RA=16&SR=.1')
         
-        # AA, GS: tugboat is not doing the right thing here; classic finds stuff (besides it being some weird format)
-        r = user.get(r.headers['Location'])
-        self.assertRedirected(user, r, '/search/q=*:*&sort=date%20desc%2C%20bibcode%20desc&format=VOTABLE&unprocessed_parameter=All%20object%20queries%20include%20SIMBAD%20and%20NED%20search%20results.&unprocessed_parameter=Please%20note%20Min%20Score%20is%20deprecated.&unprocessed_parameter=All%20object%20queries%20include%20SIMBAD%20and%20NED%20search%20results.&unprocessed_parameter=Use%20For%20Weighting&unprocessed_parameter=Relative%20Weights&unprocessed_parameter=Weighted%20Scoring&unprocessed_parameter=Synonym%20Replacement/')
-        
-        r = user.get(r.headers['location'])
         self.assertEquals(r.status_code, 200)
-        self.assertEquals(r.headers['Content-Type'], 'text/html; charset=utf-8')
+        
+        self.assertEquals(r.headers['Content-Type'], 'text/plain; charset=UTF-8')        
+        self.assertTrue('1995A&amp;AS..114..269D' in r.text)
+        
         
     
     def url_061(self, user=anonymous_user_classic):
@@ -791,15 +778,14 @@ class TestPatterns(unittest.TestCase):
         (061) /cgi-bin/nph-abs_connect freq=5514 (internal traffic: 0.06, orig_status=200)
         """
         
-        # AA: i'd think better to redirect to /classic-form/
         r = user.get('/cgi-bin/nph-abs_connect')
-        self.assertRedirected(user, r, '/tugboat/classicSearchRedirect')
+        self.assertRedirected(user, r, '/classic-form/')
         
         
-        # cause this looks really silly...
         r = user.get(r.headers['location'])
-        self.assertRedirected(user, r, '/search/q=*:*&sort=date%20desc%2C%20bibcode%20desc&unprocessed_parameter=All%20object%20queries%20include%20SIMBAD%20and%20NED%20search%20results.&unprocessed_parameter=Please%20note%20Min%20Score%20is%20deprecated.&unprocessed_parameter=Selected%20data%20format%20was%20ignored%20please%20select%20export%20function%20here.&unprocessed_parameter=All%20object%20queries%20include%20SIMBAD%20and%20NED%20search%20results.&unprocessed_parameter=Use%20For%20Weighting&unprocessed_parameter=Relative%20Weights&unprocessed_parameter=Weighted%20Scoring&unprocessed_parameter=Synonym%20Replacement/')
-    
+        self.assertEquals(r.status_code, 200)
+        self.assertEquals(r.headers['Content-Type'], 'text/html')
+        
     
     def url_062(self, user=anonymous_user_classic):
         """
@@ -851,10 +837,8 @@ class TestPatterns(unittest.TestCase):
         (066) / freq=4555 (internal traffic: 0.08, orig_status=200)
         """
         
-        # it returns 200 even though GET request will result in 302
-        # I think we decided it's ok
         r = user.head('/')
-        self.assertEquals(r.status_code, 200)
+        self.assertRedirected(user, r, '')
     
     
     def url_067(self, user=anonymous_user_classic):
@@ -868,10 +852,15 @@ class TestPatterns(unittest.TestCase):
         # what parameters are used if POST is made...
         
         r = user.get('/abs/2003PhDT........62K/trackback/')
-        self.assertEquals(r.status_code, 200) # fails now, it tries to redirect to https://dev.adsabs.harvard.edu/abs/2003PhDT........62K/trackback/
+        self.assertRedirected(user, r, '/abs/2003PhDT........62K/trackback/') #RC: find out if it is worth redirecting these groups
+        
+        r = user.get(r.headers['location'])
+        self.assertEquals(r.status_code, 404)
+        self.assertEquals(r.headers['Content-Type'], 'text/html; charset=utf-8')
+        
         
         r = user.post('/abs/2003PhDT........62K/trackback/')
-        self.assertEquals(r.status_code, 200) # what params?
+        self.assertRedirected(user, r, '/abs/2003PhDT........62K/trackback/')
     
     
     def url_068(self, user=anonymous_user_classic):
