@@ -1,11 +1,16 @@
+import os
+import sys
+
+_d = os.path.dirname('.')
+if _d not in sys.path:
+    sys.path.insert(0, _d)
+
 from classic2die.user_roles import anonymous_user_classic, authenticated_user_classic
 import unittest
 from urlparse import urlparse
 import pickle
-import os
-import sys
     
-bibcodes = ['1993CoPhC..74..239H','1994GPC.....9...69H']
+
 
 class TestPatterns(unittest.TestCase):
     
@@ -16,7 +21,7 @@ class TestPatterns(unittest.TestCase):
     def xtest_authenticated_user(self):
         self.check_urls(user=authenticated_user_classic)
         
-    def assertRedirected(self, user, r, target, code=302):
+    def assertRedirected(self, user, r, target, code=301):
         self.assertEquals(r.status_code, code)
         self.assertTrue('Location' in r.headers)
         expected = '%s%s' % (user.get_config('BBB_URL'), target)
@@ -252,7 +257,6 @@ class TestPatterns(unittest.TestCase):
         (016) /cgi-bin/basic_connect?<params> freq=163385 (internal traffic: 0.59, orig_status=200)
         """
         r = user.get('/cgi-bin/basic_connect?qsearch=Dr+James+Webb&version=1')
-        # for AA: it does not redirect to to tugboat
         self.assertRedirected(user, r, '/tugboat/classicSearchRedirect?qsearch=Dr+James+Webb&version=1') # fails
     
     
@@ -295,10 +299,10 @@ class TestPatterns(unittest.TestCase):
         (021) /pdf<0/19> freq=103256 (internal traffic: 0.04, orig_status=200)
         """
         r = user.get('/pdf/1990ApJ...359..267K')
-        # AA legacy returns 400, while classic has 200
         self.assertEquals(r.status_code, 200)
         # AA: classic is however wrong, in the header it says it's html where in fact it is PDF...
-        self.assertEquals(r.headers['Content-Type'], 'text/html; charset=UTF-8')
+        # I guess we dont care
+        # self.assertEquals(r.headers['Content-Type'], 'text/html; charset=UTF-8')
     
     
     def url_022(self, user=anonymous_user_classic):
@@ -384,20 +388,23 @@ class TestPatterns(unittest.TestCase):
         """
         (028) /cgi-bin/author_form?<params> freq=78371 (internal traffic: 0.73, orig_status=200)
         """
-        # AA: currently, this is not redirected (which is exptected, I belive); however the following
-        # subpage probably should be: http://adsabs.harvard.edu/cgi-bin/nph-abs_connect?return_req=no_params&author=Mattor,%20Nathan&db_key=PHY
+        
         r = user.get('/cgi-bin/author_form?author=Mattor,+N&fullauthor=Mattor,%20Nathan&charset=UTF-8&db_key=PHY')
         self.assertEquals(r.status_code, 200)
         self.assertTrue('<title>Author Information Form</title>' in r.text)
         
-        r = user.get('/nph-abs_connect?return_req=no_params&author=Mattor,%20Nathan&db_key=PHY')
+        r = user.get('/cgi-bin/nph-abs_connect?return_req=no_params&author=Mattor,%20Nathan&db_key=PHY')
         self.assertRedirected(user, r, '/tugboat/classicSearchRedirect?return_req=no_params&author=Mattor,%20Nathan&db_key=PHY') # fails right now...
         
+        r = user.head(r.headers['Location'])
+        self.assertRedirected(user, r, '/search/filter_database_fq_database=OR&filter_database_fq_database=database:"physics"&q=author%3A(%22Mattor%2C%20Nathan%22)&fq=%7B!type%3Daqp%20v%3D%24fq_database%7D&fq_database=(database%3A%22physics%22)&sort=date%20desc%2C%20bibcode%20desc&error_message=UNRECOGNIZABLE_VALUE&unprocessed_parameter=return_req&unprocessed_parameter=All%20object%20queries%20include%20SIMBAD%20and%20NED%20search%20results.&unprocessed_parameter=Please%20note%20Min%20Score%20is%20deprecated.&unprocessed_parameter=Selected%20data%20format%20was%20ignored%20please%20select%20export%20function%20here.&unprocessed_parameter=All%20object%20queries%20include%20SIMBAD%20and%20NED%20search%20results.&unprocessed_parameter=Use%20For%20Weighting&unprocessed_parameter=Relative%20Weights&unprocessed_parameter=Weighted%20Scoring&unprocessed_parameter=Synonym%20Replacement/', 302)
+        
+        # GS, TH: page loads, finds 48 results, but there is a warning 'Invalid value for parameter supplied'
         r = user.head(r.headers['Location'])
         self.assertEquals(r.status_code, 200)
         
         
-        # AA: on the author page, I discovered the following search (different domain) - will it stay? is there something
+        # on the author page, I discovered the following search (different domain) - will it stay? is there something
         # else important on `ads.harvard.edu`?
         
         #http://ads.harvard.edu/cgi-bin/search_persons.sh?cases=ignore&words=substring&fuzzy=exact&name=Mattor,%20N
@@ -432,8 +439,8 @@ class TestPatterns(unittest.TestCase):
         
         r = user.get(r.headers['Location'])
         
-        # GS: tugboat is redirecting to 'http://....' (should be 'https://')
-        self.assertRedirected(user, r, '/search/filter_database_fq_database%3DOR%26filter_database_fq_database%3Ddatabase:%22astronomy%22%26filter_database_fq_database%3Ddatabase:%22physics%22%26q%3D%3Dauthor%3A%28%22Douglas%2C%20A.%20Vibert%22%20AND%20%22Douglas%2C%20A.%20V.%22%29%20AND%20pubdate%3A%5B%2A%20TO%201982-12%5D%26fq%3D%7B%21type%3Daqp%20v%3D%24fq_database%7D%26fq_database%3D%28database%3A%22astronomy%22%20OR%20database%3A%22physics%22%29%26sort%3Ddate%20desc%2C%20bibcode%20desc%26warning_message%3DAUTHOR_ANDED_WARNING%26unprocessed_parameter%3DPlease%20note%20Min%20Score%20is%20deprecated.%26unprocessed_parameter%3DSelected%20data%20format%20was%20ignored%20please%20select%20export%20function%20here.%26unprocessed_parameter%3DUse%20For%20Weighting%26unprocessed_parameter%3DRelative%20Weights%26unprocessed_parameter%3DWeighted%20Scoring%26unprocessed_parameter%3DSynonym%20Replacement%26unprocessed_parameter%3DParameters%20not%20processed%3A%20obj_logic/')
+
+        self.assertRedirected(user, r, '/search/filter_database_fq_database%3DOR%26filter_database_fq_database%3Ddatabase:%22astronomy%22%26filter_database_fq_database%3Ddatabase:%22physics%22%26q%3D%3Dauthor%3A%28%22Douglas%2C%20A.%20Vibert%22%20AND%20%22Douglas%2C%20A.%20V.%22%29%20AND%20pubdate%3A%5B%2A%20TO%201982-12%5D%26fq%3D%7B%21type%3Daqp%20v%3D%24fq_database%7D%26fq_database%3D%28database%3A%22astronomy%22%20OR%20database%3A%22physics%22%29%26sort%3Ddate%20desc%2C%20bibcode%20desc%26warning_message%3DAUTHOR_ANDED_WARNING%26unprocessed_parameter%3DPlease%20note%20Min%20Score%20is%20deprecated.%26unprocessed_parameter%3DSelected%20data%20format%20was%20ignored%20please%20select%20export%20function%20here.%26unprocessed_parameter%3DUse%20For%20Weighting%26unprocessed_parameter%3DRelative%20Weights%26unprocessed_parameter%3DWeighted%20Scoring%26unprocessed_parameter%3DSynonym%20Replacement%26unprocessed_parameter%3DParameters%20not%20processed%3A%20obj_logic/', 302)
 
         # AA, GS: the query above is rewritten as `=author:("Douglas, A. Vibert" AND "Douglas, A. V.") AND pubdate:[* TO 1982-12]`
         # which finds 0 results because of the 'AND' between author names
@@ -614,7 +621,6 @@ class TestPatterns(unittest.TestCase):
         (044) /abs/<19> freq=29979 (internal traffic: 0.01, orig_status=302)
         """
         r = user.get('/abs/2010AAS...21545104O')
-        self.p(r)
         self.assertRedirected(user, r, '/abs/2010AAS...21545104O')
         
         r = user.head(r.headers['Location'])
@@ -895,6 +901,7 @@ class TestPatterns(unittest.TestCase):
         self.assertTrue('Irish Astronomical Journal' in r.text)
     
     
+    @unittest.skip("disabled")
     def url_071(self, user=anonymous_user_classic):
         """
         (071) /abs/<28> freq=4333 (internal traffic: 0.08, orig_status=200)
@@ -902,7 +909,7 @@ class TestPatterns(unittest.TestCase):
         r = user.get('/abs/1975tads.book.....R%E5%AF%86')
         self.assertEquals(r.status_code, 200)
     
-    
+    @unittest.skip("disabled")
     def url_072(self, user=anonymous_user_classic):
         """
         (072) /full/<3/4/5/4/0/16> freq=4312 (internal traffic: 0.98, orig_status=200)
@@ -910,7 +917,7 @@ class TestPatterns(unittest.TestCase):
         r = user.get('/full/gif/seri/IrAJ./0020//0000102,002.html')
         self.assertEquals(r.status_code, 200)
     
-    
+    @unittest.skip("disabled")
     def url_073(self, user=anonymous_user_classic):
         """
         (073) /abs/<34> freq=4072 (internal traffic: 0.00, orig_status=200)
@@ -918,7 +925,7 @@ class TestPatterns(unittest.TestCase):
         r = user.get('/abs/1989STIA...9051377A%EF%BF%BD%C3%9C')
         self.assertEquals(r.status_code, 200)
     
-    
+    @unittest.skip("disabled")
     def url_074(self, user=anonymous_user_classic):
         """
         (074) /cgi-bin/nph-toc_query?<params> freq=4029 (internal traffic: 0.10, orig_status=200)
@@ -926,7 +933,7 @@ class TestPatterns(unittest.TestCase):
         r = user.get('/cgi-bin/nph-toc_query?journal=ApJ&volume=LATEST&data_type=RSS&db_key=AST')
         self.assertEquals(r.status_code, 200)
     
-    
+    @unittest.skip("disabled")
     def url_075(self, user=anonymous_user_classic):
         """
         (075) /favicon.ico freq=3915 (internal traffic: 0.00, orig_status=200)
@@ -934,7 +941,7 @@ class TestPatterns(unittest.TestCase):
         r = user.head('/favicon.ico')
         self.assertEquals(r.status_code, 200)
     
-    
+    @unittest.skip("disabled")
     def url_076(self, user=anonymous_user_classic):
         """
         (076) /figs/dot.gif freq=3913 (internal traffic: 0.71, orig_status=304)
@@ -942,7 +949,7 @@ class TestPatterns(unittest.TestCase):
         r = user.get('/figs/dot.gif')
         self.assertEquals(r.status_code, 304)
     
-    
+    @unittest.skip("disabled")
     def url_077(self, user=anonymous_user_classic):
         """
         (077) /cgi-bin/bib_query?<params> freq=3912 (internal traffic: 0.01, orig_status=404)
@@ -950,7 +957,7 @@ class TestPatterns(unittest.TestCase):
         r = user.get('/cgi-bin/bib_query?1991RC3.9.C...0000d')
         self.assertEquals(r.status_code, 404)
     
-    
+    @unittest.skip("disabled")
     def url_078(self, user=anonymous_user_classic):
         """
         (078) /cgi-bin/nph-manage_account freq=3728 (internal traffic: 0.98, orig_status=200)
@@ -958,7 +965,7 @@ class TestPatterns(unittest.TestCase):
         r = user.post('/cgi-bin/nph-manage_account')
         self.assertEquals(r.status_code, 200)
     
-    
+    @unittest.skip("disabled")
     def url_079(self, user=anonymous_user_classic):
         """
         (079) /doi/<7/5/7> freq=3646 (internal traffic: 0.44, orig_status=200)
@@ -966,7 +973,7 @@ class TestPatterns(unittest.TestCase):
         r = user.get('/doi/10.1093/mnras/stz2615')
         self.assertEquals(r.status_code, 200)
     
-    
+    @unittest.skip("disabled")
     def url_080(self, user=anonymous_user_classic):
         """
         (080) /abs/<23> freq=3631 (internal traffic: 0.32, orig_status=200)
@@ -974,7 +981,7 @@ class TestPatterns(unittest.TestCase):
         r = user.get('/abs/1997A&amp;A...321..293S')
         self.assertEquals(r.status_code, 200)
     
-    
+    @unittest.skip("disabled")
     def url_081(self, user=anonymous_user_classic):
         """
         (081) /figs/myadslogo.gif freq=3484 (internal traffic: 0.01, orig_status=304)
@@ -982,7 +989,7 @@ class TestPatterns(unittest.TestCase):
         r = user.get('/figs/myadslogo.gif')
         self.assertEquals(r.status_code, 304)
     
-    
+    @unittest.skip("disabled")
     def url_082(self, user=anonymous_user_classic):
         """
         (082) /abs_doc/help_pages/art_service.html freq=3388 (internal traffic: 0.97, orig_status=404)
@@ -990,7 +997,7 @@ class TestPatterns(unittest.TestCase):
         r = user.get('/abs_doc/help_pages/art_service.html')
         self.assertEquals(r.status_code, 404)
     
-    
+    @unittest.skip("disabled")
     def url_083(self, user=anonymous_user_classic):
         """
         (083) /default_service.html freq=3347 (internal traffic: 0.02, orig_status=200)
@@ -998,7 +1005,7 @@ class TestPatterns(unittest.TestCase):
         r = user.get('/default_service.html')
         self.assertEquals(r.status_code, 200)
     
-    
+    @unittest.skip("disabled")
     def url_084(self, user=anonymous_user_classic):
         """
         (084) /?<params> freq=3292 (internal traffic: 0.33, orig_status=200)
@@ -1006,7 +1013,7 @@ class TestPatterns(unittest.TestCase):
         r = user.get('/?author=2')
         self.assertEquals(r.status_code, 200)
     
-    
+    @unittest.skip("disabled")
     def url_085(self, user=anonymous_user_classic):
         """
         (085) /figs/arxiv_logo.gif freq=3278 (internal traffic: 0.19, orig_status=200)
@@ -1014,7 +1021,7 @@ class TestPatterns(unittest.TestCase):
         r = user.get('/figs/arxiv_logo.gif')
         self.assertEquals(r.status_code, 200)
     
-    
+    @unittest.skip("disabled")
     def url_086(self, user=anonymous_user_classic):
         """
         (086) /figs/nasalogo.gif freq=3126 (internal traffic: 0.89, orig_status=304)
@@ -1022,7 +1029,7 @@ class TestPatterns(unittest.TestCase):
         r = user.get('/figs/nasalogo.gif')
         self.assertEquals(r.status_code, 304)
     
-    
+    @unittest.skip("disabled")
     def url_087(self, user=anonymous_user_classic):
         """
         (087) /figs/cfalogo.gif freq=3069 (internal traffic: 0.89, orig_status=304)
@@ -1030,7 +1037,7 @@ class TestPatterns(unittest.TestCase):
         r = user.get('/figs/cfalogo.gif')
         self.assertEquals(r.status_code, 304)
     
-    
+    @unittest.skip("disabled")
     def url_088(self, user=anonymous_user_classic):
         """
         (088) /abs_doc/help_pages/search.html freq=3044 (internal traffic: 0.53, orig_status=200)
@@ -1038,7 +1045,7 @@ class TestPatterns(unittest.TestCase):
         r = user.get('/abs_doc/help_pages/search.html')
         self.assertEquals(r.status_code, 200)
     
-    
+    @unittest.skip("disabled")
     def url_089(self, user=anonymous_user_classic):
         """
         (089) /figs/newlogo_small.gif freq=3023 (internal traffic: 0.89, orig_status=304)
@@ -1046,7 +1053,7 @@ class TestPatterns(unittest.TestCase):
         r = user.get('/figs/newlogo_small.gif')
         self.assertEquals(r.status_code, 304)
     
-    
+    @unittest.skip("disabled")
     def url_090(self, user=anonymous_user_classic):
         """
         (090) /figs/adslogo.gif freq=2955 (internal traffic: 0.99, orig_status=304)
@@ -1054,7 +1061,7 @@ class TestPatterns(unittest.TestCase):
         r = user.get('/figs/adslogo.gif')
         self.assertEquals(r.status_code, 304)
     
-    
+    @unittest.skip("disabled")
     def url_091(self, user=anonymous_user_classic):
         """
         (091) /abs_doc/help_pages/images/adslogo.gif freq=2867 (internal traffic: 0.97, orig_status=200)
@@ -1062,7 +1069,7 @@ class TestPatterns(unittest.TestCase):
         r = user.get('/abs_doc/help_pages/images/adslogo.gif')
         self.assertEquals(r.status_code, 200)
     
-    
+    @unittest.skip("disabled")
     def url_092(self, user=anonymous_user_classic):
         """
         (092) /cgi-bin/basic_connect?<params> freq=2866 (internal traffic: 0.00, orig_status=200)
@@ -1070,7 +1077,7 @@ class TestPatterns(unittest.TestCase):
         r = user.head('/cgi-bin/basic_connect?qsearch=10.1016/j.jaad.2015.07.028')
         self.assertEquals(r.status_code, 200)
     
-    
+    @unittest.skip("disabled")
     def url_093(self, user=anonymous_user_classic):
         """
         (093) /figs/newlogo.gif freq=2857 (internal traffic: 0.87, orig_status=304)
@@ -1078,7 +1085,7 @@ class TestPatterns(unittest.TestCase):
         r = user.get('/figs/newlogo.gif')
         self.assertEquals(r.status_code, 304)
     
-    
+    @unittest.skip("disabled")
     def url_094(self, user=anonymous_user_classic):
         """
         (094) /abs_doc/help_pages/images/dot.gif freq=2847 (internal traffic: 0.97, orig_status=200)
@@ -1086,7 +1093,7 @@ class TestPatterns(unittest.TestCase):
         r = user.get('/abs_doc/help_pages/images/dot.gif')
         self.assertEquals(r.status_code, 200)
     
-    
+    @unittest.skip("disabled")
     def url_095(self, user=anonymous_user_classic):
         """
         (095) /abs_doc/help_pages/images/goup.gif freq=2791 (internal traffic: 0.97, orig_status=200)
@@ -1094,7 +1101,7 @@ class TestPatterns(unittest.TestCase):
         r = user.get('/abs_doc/help_pages/images/goup.gif')
         self.assertEquals(r.status_code, 200)
     
-    
+    @unittest.skip("disabled")
     def url_096(self, user=anonymous_user_classic):
         """
         (096) /abs_doc/help_pages/images/right.gif freq=2767 (internal traffic: 0.97, orig_status=200)
@@ -1102,7 +1109,7 @@ class TestPatterns(unittest.TestCase):
         r = user.get('/abs_doc/help_pages/images/right.gif')
         self.assertEquals(r.status_code, 200)
     
-    
+    @unittest.skip("disabled")
     def url_097(self, user=anonymous_user_classic):
         """
         (097) /abs_doc/help_pages/images/left.gif freq=2663 (internal traffic: 0.97, orig_status=200)
@@ -1110,7 +1117,7 @@ class TestPatterns(unittest.TestCase):
         r = user.get('/abs_doc/help_pages/images/left.gif')
         self.assertEquals(r.status_code, 200)
     
-    
+    @unittest.skip("disabled")
     def url_098(self, user=anonymous_user_classic):
         """
         (098) /cgi-bin/insert_login/credentials freq=2647 (internal traffic: 0.00, orig_status=200)
@@ -1118,7 +1125,7 @@ class TestPatterns(unittest.TestCase):
         r = user.get('/cgi-bin/insert_login/credentials')
         self.assertEquals(r.status_code, 200)
     
-    
+    @unittest.skip("disabled")
     def url_099(self, user=anonymous_user_classic):
         """
         (099) /cgi-bin/iarticle_query?<params> freq=2639 (internal traffic: 0.12, orig_status=200)
@@ -1127,6 +1134,7 @@ class TestPatterns(unittest.TestCase):
         self.assertEquals(r.status_code, 200)
     
     
+    @unittest.skip("disabled")
     def url_100(self, user=anonymous_user_classic):
         """
         (100) /plus/mytag_js.php?<params> freq=2603 (internal traffic: 0.75, orig_status=404)
@@ -1135,6 +1143,7 @@ class TestPatterns(unittest.TestCase):
         self.assertEquals(r.status_code, 404)
     
     
+    @unittest.skip("disabled")
     def url_101(self, user=anonymous_user_classic):
         """
         (101) /abstract_service.html/legacy freq=2574 (internal traffic: 0.01, orig_status=302)
@@ -1143,6 +1152,7 @@ class TestPatterns(unittest.TestCase):
         self.assertEquals(r.status_code, 302)
     
     
+    @unittest.skip("disabled")
     def url_102(self, user=anonymous_user_classic):
         """
         (102) /figs/addtomyyahoo.gif freq=2530 (internal traffic: 1.00, orig_status=304)
@@ -1151,6 +1161,7 @@ class TestPatterns(unittest.TestCase):
         self.assertEquals(r.status_code, 304)
     
     
+    @unittest.skip("disabled")
     def url_103(self, user=anonymous_user_classic):
         """
         (103) /figs/xml.gif freq=2495 (internal traffic: 0.99, orig_status=304)
@@ -1159,6 +1170,7 @@ class TestPatterns(unittest.TestCase):
         self.assertEquals(r.status_code, 304)
     
     
+    @unittest.skip("disabled")
     def url_104(self, user=anonymous_user_classic):
         """
         (104) /cgi-bin/exec_myads2/?<params> freq=2386 (internal traffic: 0.00, orig_status=200)
@@ -1167,6 +1179,7 @@ class TestPatterns(unittest.TestCase):
         self.assertEquals(r.status_code, 200)
     
     
+    @unittest.skip("disabled")
     def url_105(self, user=anonymous_user_classic):
         """
         (105) /full/<89> freq=2290 (internal traffic: 0.00, orig_status=404)
@@ -1175,6 +1188,7 @@ class TestPatterns(unittest.TestCase):
         self.assertEquals(r.status_code, 404)
     
     
+    @unittest.skip("disabled")
     def url_106(self, user=anonymous_user_classic):
         """
         (106) /cgi-bin/exec_myads2?<params> freq=2283 (internal traffic: 0.19, orig_status=304)
@@ -1183,6 +1197,7 @@ class TestPatterns(unittest.TestCase):
         self.assertEquals(r.status_code, 304)
     
     
+    @unittest.skip("disabled")
     def url_107(self, user=anonymous_user_classic):
         """
         (107) /cgi-bin/list_connect?<params> freq=2249 (internal traffic: 0.58, orig_status=200)
@@ -1191,6 +1206,7 @@ class TestPatterns(unittest.TestCase):
         self.assertEquals(r.status_code, 200)
     
     
+    @unittest.skip("disabled")
     def url_108(self, user=anonymous_user_classic):
         """
         (108) /basic_search.html freq=2223 (internal traffic: 0.48, orig_status=200)
@@ -1199,6 +1215,7 @@ class TestPatterns(unittest.TestCase):
         self.assertEquals(r.status_code, 200)
     
     
+    @unittest.skip("disabled")
     def url_109(self, user=anonymous_user_classic):
         """
         (109) /abs_doc/faq.html freq=2202 (internal traffic: 0.33, orig_status=200)
@@ -1207,6 +1224,7 @@ class TestPatterns(unittest.TestCase):
         self.assertEquals(r.status_code, 200)
     
     
+    @unittest.skip("disabled")
     def url_110(self, user=anonymous_user_classic):
         """
         (110) /full/<20> freq=2113 (internal traffic: 0.00, orig_status=200)
@@ -1215,6 +1233,7 @@ class TestPatterns(unittest.TestCase):
         self.assertEquals(r.status_code, 200)
     
     
+    @unittest.skip("disabled")
     def url_111(self, user=anonymous_user_classic):
         """
         (111) /figs/nasalogo_med.png freq=2052 (internal traffic: 1.00, orig_status=304)
@@ -1223,6 +1242,7 @@ class TestPatterns(unittest.TestCase):
         self.assertEquals(r.status_code, 304)
     
     
+    @unittest.skip("disabled")
     def url_112(self, user=anonymous_user_classic):
         """
         (112) /apple-touch-icon.png freq=1990 (internal traffic: 0.00, orig_status=404)
@@ -1231,6 +1251,7 @@ class TestPatterns(unittest.TestCase):
         self.assertEquals(r.status_code, 404)
     
     
+    @unittest.skip("disabled")
     def url_113(self, user=anonymous_user_classic):
         """
         (113) /apple-touch-icon-precomposed.png freq=1989 (internal traffic: 0.00, orig_status=404)
@@ -1239,6 +1260,7 @@ class TestPatterns(unittest.TestCase):
         self.assertEquals(r.status_code, 404)
     
     
+    @unittest.skip("disabled")
     def url_114(self, user=anonymous_user_classic):
         """
         (114) /doi/<7/6> freq=1922 (internal traffic: 0.02, orig_status=302)
@@ -1247,6 +1269,7 @@ class TestPatterns(unittest.TestCase):
         self.assertEquals(r.status_code, 302)
     
     
+    @unittest.skip("disabled")
     def url_115(self, user=anonymous_user_classic):
         """
         (115) /abs/<16> freq=1863 (internal traffic: 0.00, orig_status=200)
@@ -1255,6 +1278,7 @@ class TestPatterns(unittest.TestCase):
         self.assertEquals(r.status_code, 200)
     
     
+    @unittest.skip("disabled")
     def url_116(self, user=anonymous_user_classic):
         """
         (116) /abs_doc/ads.css freq=1858 (internal traffic: 1.00, orig_status=304)
@@ -1263,6 +1287,7 @@ class TestPatterns(unittest.TestCase):
         self.assertEquals(r.status_code, 304)
     
     
+    @unittest.skip("disabled")
     def url_117(self, user=anonymous_user_classic):
         """
         (117) /abs/<18> freq=1841 (internal traffic: 0.22, orig_status=200)
@@ -1271,6 +1296,7 @@ class TestPatterns(unittest.TestCase):
         self.assertEquals(r.status_code, 200)
     
     
+    @unittest.skip("disabled")
     def url_118(self, user=anonymous_user_classic):
         """
         (118) /figs/si_logo.gif freq=1800 (internal traffic: 1.00, orig_status=304)
@@ -1279,6 +1305,7 @@ class TestPatterns(unittest.TestCase):
         self.assertEquals(r.status_code, 304)
     
     
+    @unittest.skip("disabled")
     def url_119(self, user=anonymous_user_classic):
         """
         (119) /cgi-bin/bib_query?<params> freq=1738 (internal traffic: 0.03, orig_status=200)
@@ -1287,6 +1314,7 @@ class TestPatterns(unittest.TestCase):
         self.assertEquals(r.status_code, 200)
     
     
+    @unittest.skip("disabled")
     def url_120(self, user=anonymous_user_classic):
         """
         (120) /cgi-bin/access_denied freq=1690 (internal traffic: 0.01, orig_status=403)
@@ -1295,6 +1323,7 @@ class TestPatterns(unittest.TestCase):
         self.assertEquals(r.status_code, 403)
     
     
+    @unittest.skip("disabled")
     def url_121(self, user=anonymous_user_classic):
         """
         (121) /robots.txt freq=1657 (internal traffic: 0.03, orig_status=200)
@@ -1303,6 +1332,7 @@ class TestPatterns(unittest.TestCase):
         self.assertEquals(r.status_code, 200)
     
     
+    @unittest.skip("disabled")
     def url_122(self, user=anonymous_user_classic):
         """
         (122) /cgi-bin/exec_myads2/all?<params> freq=1582 (internal traffic: 0.00, orig_status=304)
@@ -1311,6 +1341,7 @@ class TestPatterns(unittest.TestCase):
         self.assertEquals(r.status_code, 304)
     
     
+    @unittest.skip("disabled")
     def url_123(self, user=anonymous_user_classic):
         """
         (123) /doi/<7/24> freq=1528 (internal traffic: 0.00, orig_status=200)
@@ -1319,6 +1350,7 @@ class TestPatterns(unittest.TestCase):
         self.assertEquals(r.status_code, 200)
     
     
+    @unittest.skip("disabled")
     def url_124(self, user=anonymous_user_classic):
         """
         (124) /cgi-bin/article_queryform?<params> freq=1523 (internal traffic: 0.73, orig_status=200)
@@ -1327,6 +1359,7 @@ class TestPatterns(unittest.TestCase):
         self.assertEquals(r.status_code, 200)
     
     
+    @unittest.skip("disabled")
     def url_125(self, user=anonymous_user_classic):
         """
         (125) /cgi-bin/nph-basic_connect freq=1491 (internal traffic: 0.10, orig_status=200)
@@ -1335,6 +1368,7 @@ class TestPatterns(unittest.TestCase):
         self.assertEquals(r.status_code, 200)
     
     
+    @unittest.skip("disabled")
     def url_126(self, user=anonymous_user_classic):
         """
         (126) /cgi-bin/nph-iarticle_query?<params> freq=1455 (internal traffic: 0.47, orig_status=200)
@@ -1343,6 +1377,7 @@ class TestPatterns(unittest.TestCase):
         self.assertEquals(r.status_code, 200)
     
     
+    @unittest.skip("disabled")
     def url_127(self, user=anonymous_user_classic):
         """
         (127) /abs_doc/help_pages/results.html freq=1402 (internal traffic: 0.39, orig_status=200)
@@ -1351,6 +1386,7 @@ class TestPatterns(unittest.TestCase):
         self.assertEquals(r.status_code, 200)
     
     
+    @unittest.skip("disabled")
     def url_128(self, user=anonymous_user_classic):
         """
         (128) /cgi-bin/nph-abs_connect?<params> freq=1400 (internal traffic: 0.16, orig_status=200)
@@ -1359,6 +1395,7 @@ class TestPatterns(unittest.TestCase):
         self.assertEquals(r.status_code, 200)
     
     
+    @unittest.skip("disabled")
     def url_129(self, user=anonymous_user_classic):
         """
         (129) /abs/<20> freq=1270 (internal traffic: 0.09, orig_status=404)
@@ -1367,6 +1404,7 @@ class TestPatterns(unittest.TestCase):
         self.assertEquals(r.status_code, 404)
     
     
+    @unittest.skip("disabled")
     def url_130(self, user=anonymous_user_classic):
         """
         (130) /abs_doc/list_funcs.js freq=1256 (internal traffic: 0.99, orig_status=200)
@@ -1375,6 +1413,7 @@ class TestPatterns(unittest.TestCase):
         self.assertEquals(r.status_code, 200)
     
     
+    @unittest.skip("disabled")
     def url_131(self, user=anonymous_user_classic):
         """
         (131) /cgi-bin/myads2_set freq=1251 (internal traffic: 1.00, orig_status=200)
@@ -1383,6 +1422,7 @@ class TestPatterns(unittest.TestCase):
         self.assertEquals(r.status_code, 200)
     
     
+    @unittest.skip("disabled")
     def url_132(self, user=anonymous_user_classic):
         """
         (132) /cgi-bin/nph-bib_query?<params> freq=1215 (internal traffic: 0.04, orig_status=200)
@@ -1391,6 +1431,7 @@ class TestPatterns(unittest.TestCase):
         self.assertEquals(r.status_code, 200)
     
     
+    @unittest.skip("disabled")
     def url_133(self, user=anonymous_user_classic):
         """
         (133) /doi/<7/17> freq=1195 (internal traffic: 0.18, orig_status=200)
@@ -1399,6 +1440,7 @@ class TestPatterns(unittest.TestCase):
         self.assertEquals(r.status_code, 200)
     
     
+    @unittest.skip("disabled")
     def url_134(self, user=anonymous_user_classic):
         """
         (134) /cgi-bin/myads2_set?<params> freq=1187 (internal traffic: 0.11, orig_status=302)
@@ -1407,6 +1449,7 @@ class TestPatterns(unittest.TestCase):
         self.assertEquals(r.status_code, 302)
     
     
+    @unittest.skip("disabled")
     def url_135(self, user=anonymous_user_classic):
         """
         (135) /abs_doc/help_pages/taggedformat.html freq=1187 (internal traffic: 0.10, orig_status=200)
@@ -1415,6 +1458,7 @@ class TestPatterns(unittest.TestCase):
         self.assertEquals(r.status_code, 200)
     
     
+    @unittest.skip("disabled")
     def url_136(self, user=anonymous_user_classic):
         """
         (136) /myads/ freq=1170 (internal traffic: 0.38, orig_status=200)
@@ -1423,6 +1467,7 @@ class TestPatterns(unittest.TestCase):
         self.assertEquals(r.status_code, 200)
     
     
+    @unittest.skip("disabled")
     def url_137(self, user=anonymous_user_classic):
         """
         (137) /myads freq=1159 (internal traffic: 0.36, orig_status=301)
@@ -1431,6 +1476,7 @@ class TestPatterns(unittest.TestCase):
         self.assertEquals(r.status_code, 301)
     
     
+    @unittest.skip("disabled")
     def url_138(self, user=anonymous_user_classic):
         """
         (138) /user.php?<params> freq=1145 (internal traffic: 0.00, orig_status=404)
@@ -1439,6 +1485,7 @@ class TestPatterns(unittest.TestCase):
         self.assertEquals(r.status_code, 404)
     
     
+    @unittest.skip("disabled")
     def url_139(self, user=anonymous_user_classic):
         """
         (139) /proxy5/check.php freq=1133 (internal traffic: 0.00, orig_status=404)
@@ -1447,6 +1494,7 @@ class TestPatterns(unittest.TestCase):
         self.assertEquals(r.status_code, 404)
     
     
+    @unittest.skip("disabled")
     def url_140(self, user=anonymous_user_classic):
         """
         (140) /preprint_service.html freq=1132 (internal traffic: 0.70, orig_status=200)
@@ -1455,6 +1503,7 @@ class TestPatterns(unittest.TestCase):
         self.assertEquals(r.status_code, 200)
     
     
+    @unittest.skip("disabled")
     def url_141(self, user=anonymous_user_classic):
         """
         (141) /cgi-bin/bib_query?<params> freq=1099 (internal traffic: 0.01, orig_status=302)
@@ -1463,6 +1512,7 @@ class TestPatterns(unittest.TestCase):
         self.assertEquals(r.status_code, 302)
     
     
+    @unittest.skip("disabled")
     def url_142(self, user=anonymous_user_classic):
         """
         (142) /cgi-bin/pref_set?<params> freq=1055 (internal traffic: 0.93, orig_status=302)
@@ -1471,6 +1521,7 @@ class TestPatterns(unittest.TestCase):
         self.assertEquals(r.status_code, 302)
     
     
+    @unittest.skip("disabled")
     def url_143(self, user=anonymous_user_classic):
         """
         (143) /xmlrpc.php?<params> freq=1040 (internal traffic: 0.00, orig_status=404)
@@ -1479,6 +1530,7 @@ class TestPatterns(unittest.TestCase):
         self.assertEquals(r.status_code, 404)
     
     
+    @unittest.skip("disabled")
     def url_144(self, user=anonymous_user_classic):
         """
         (144) /cgi-bin/exec_myads2?<params> freq=1012 (internal traffic: 0.00, orig_status=304)
@@ -1487,6 +1539,7 @@ class TestPatterns(unittest.TestCase):
         self.assertEquals(r.status_code, 304)
     
     
+    @unittest.skip("disabled")
     def url_145(self, user=anonymous_user_classic):
         """
         (145) /abs/<23> freq=1002 (internal traffic: 0.02, orig_status=302)
@@ -1495,6 +1548,7 @@ class TestPatterns(unittest.TestCase):
         self.assertEquals(r.status_code, 302)
     
     
+    @unittest.skip("disabled")
     def url_146(self, user=anonymous_user_classic):
         """
         (146) /abs_doc/help_pages/data.html freq=968 (internal traffic: 0.21, orig_status=200)
@@ -1503,6 +1557,7 @@ class TestPatterns(unittest.TestCase):
         self.assertEquals(r.status_code, 200)
     
     
+    @unittest.skip("disabled")
     def url_147(self, user=anonymous_user_classic):
         """
         (147) /abs_doc/site_map/ freq=966 (internal traffic: 0.60, orig_status=200)
@@ -1511,6 +1566,7 @@ class TestPatterns(unittest.TestCase):
         self.assertEquals(r.status_code, 200)
     
     
+    @unittest.skip("disabled")
     def url_148(self, user=anonymous_user_classic):
         """
         (148) /cms/wp-includes/wlwmanifest.xml freq=957 (internal traffic: 0.00, orig_status=404)
@@ -1519,6 +1575,7 @@ class TestPatterns(unittest.TestCase):
         self.assertEquals(r.status_code, 404)
     
     
+    @unittest.skip("disabled")
     def url_149(self, user=anonymous_user_classic):
         """
         (149) /site/wp-includes/wlwmanifest.xml freq=956 (internal traffic: 0.00, orig_status=404)
@@ -1527,6 +1584,7 @@ class TestPatterns(unittest.TestCase):
         self.assertEquals(r.status_code, 404)
     
     
+    @unittest.skip("disabled")
     def url_150(self, user=anonymous_user_classic):
         """
         (150) /wordpress/wp-includes/wlwmanifest.xml freq=956 (internal traffic: 0.00, orig_status=404)
@@ -1535,6 +1593,7 @@ class TestPatterns(unittest.TestCase):
         self.assertEquals(r.status_code, 404)
     
     
+    @unittest.skip("disabled")
     def url_151(self, user=anonymous_user_classic):
         """
         (151) /abs_doc/journal_abbr.html freq=954 (internal traffic: 0.82, orig_status=200)
@@ -1543,6 +1602,7 @@ class TestPatterns(unittest.TestCase):
         self.assertEquals(r.status_code, 200)
     
     
+    @unittest.skip("disabled")
     def url_152(self, user=anonymous_user_classic):
         """
         (152) /blog/wp-includes/wlwmanifest.xml freq=953 (internal traffic: 0.00, orig_status=404)
@@ -1551,6 +1611,7 @@ class TestPatterns(unittest.TestCase):
         self.assertEquals(r.status_code, 404)
     
     
+    @unittest.skip("disabled")
     def url_153(self, user=anonymous_user_classic):
         """
         (153) /wp/wp-includes/wlwmanifest.xml freq=953 (internal traffic: 0.00, orig_status=404)
@@ -1559,6 +1620,7 @@ class TestPatterns(unittest.TestCase):
         self.assertEquals(r.status_code, 404)
     
     
+    @unittest.skip("disabled")
     def url_154(self, user=anonymous_user_classic):
         """
         (154) /admin_aspcms/_system/aspcms_sitesetting.asp freq=951 (internal traffic: 0.67, orig_status=404)
@@ -1567,6 +1629,7 @@ class TestPatterns(unittest.TestCase):
         self.assertEquals(r.status_code, 404)
     
     
+    @unittest.skip("disabled")
     def url_155(self, user=anonymous_user_classic):
         """
         (155) /full/<19/16> freq=950 (internal traffic: 0.45, orig_status=200)
@@ -1575,6 +1638,7 @@ class TestPatterns(unittest.TestCase):
         self.assertEquals(r.status_code, 200)
     
     
+    @unittest.skip("disabled")
     def url_156(self, user=anonymous_user_classic):
         """
         (156) /wp-includes/wlwmanifest.xml freq=949 (internal traffic: 0.00, orig_status=404)
@@ -1583,6 +1647,7 @@ class TestPatterns(unittest.TestCase):
         self.assertEquals(r.status_code, 404)
     
     
+    @unittest.skip("disabled")
     def url_157(self, user=anonymous_user_classic):
         """
         (157) /cgi-bin/nph-journal_query?<params> freq=930 (internal traffic: 0.79, orig_status=200)
@@ -1591,6 +1656,7 @@ class TestPatterns(unittest.TestCase):
         self.assertEquals(r.status_code, 200)
     
     
+    @unittest.skip("disabled")
     def url_158(self, user=anonymous_user_classic):
         """
         (158) /full/<4/5/4/16> freq=914 (internal traffic: 0.18, orig_status=200)
@@ -1599,6 +1665,7 @@ class TestPatterns(unittest.TestCase):
         self.assertEquals(r.status_code, 200)
     
     
+    @unittest.skip("disabled")
     def url_159(self, user=anonymous_user_classic):
         """
         (159) /cgi-bin/manage_account freq=898 (internal traffic: 0.02, orig_status=200)
@@ -1607,6 +1674,7 @@ class TestPatterns(unittest.TestCase):
         self.assertEquals(r.status_code, 200)
     
     
+    @unittest.skip("disabled")
     def url_160(self, user=anonymous_user_classic):
         """
         (160) /user_feedback.html freq=860 (internal traffic: 0.61, orig_status=200)
@@ -1615,6 +1683,7 @@ class TestPatterns(unittest.TestCase):
         self.assertEquals(r.status_code, 200)
     
     
+    @unittest.skip("disabled")
     def url_161(self, user=anonymous_user_classic):
         """
         (161) /cgi-bin/manage_account/credentials?<params> freq=836 (internal traffic: 0.00, orig_status=200)
@@ -1623,6 +1692,7 @@ class TestPatterns(unittest.TestCase):
         self.assertEquals(r.status_code, 200)
     
     
+    @unittest.skip("disabled")
     def url_162(self, user=anonymous_user_classic):
         """
         (162) /abs_doc/help_pages/overview.html freq=799 (internal traffic: 0.21, orig_status=200)
@@ -1631,6 +1701,7 @@ class TestPatterns(unittest.TestCase):
         self.assertEquals(r.status_code, 200)
     
     
+    @unittest.skip("disabled")
     def url_163(self, user=anonymous_user_classic):
         """
         (163) /doi/<7/5/6> freq=795 (internal traffic: 0.02, orig_status=200)
@@ -1639,6 +1710,7 @@ class TestPatterns(unittest.TestCase):
         self.assertEquals(r.status_code, 200)
     
     
+    @unittest.skip("disabled")
     def url_164(self, user=anonymous_user_classic):
         """
         (164) /cgi-bin/xauthor_queryform?<params> freq=775 (internal traffic: 0.75, orig_status=200)
@@ -1647,6 +1719,7 @@ class TestPatterns(unittest.TestCase):
         self.assertEquals(r.status_code, 200)
     
     
+    @unittest.skip("disabled")
     def url_165(self, user=anonymous_user_classic):
         """
         (165) /cgi-bin/list_connect?<params> freq=774 (internal traffic: 1.00, orig_status=302)
@@ -1655,6 +1728,7 @@ class TestPatterns(unittest.TestCase):
         self.assertEquals(r.status_code, 302)
     
     
+    @unittest.skip("disabled")
     def url_166(self, user=anonymous_user_classic):
         """
         (166) /abs/<20> freq=768 (internal traffic: 0.07, orig_status=302)
@@ -1663,6 +1737,7 @@ class TestPatterns(unittest.TestCase):
         self.assertEquals(r.status_code, 302)
     
     
+    @unittest.skip("disabled")
     def url_167(self, user=anonymous_user_classic):
         """
         (167) /abs_doc/help_pages/ freq=768 (internal traffic: 0.55, orig_status=200)
@@ -1671,6 +1746,7 @@ class TestPatterns(unittest.TestCase):
         self.assertEquals(r.status_code, 200)
     
     
+    @unittest.skip("disabled")
     def url_168(self, user=anonymous_user_classic):
         """
         (168) /full/<19> freq=746 (internal traffic: 0.01, orig_status=302)
@@ -1679,6 +1755,7 @@ class TestPatterns(unittest.TestCase):
         self.assertEquals(r.status_code, 302)
     
     
+    @unittest.skip("disabled")
     def url_169(self, user=anonymous_user_classic):
         """
         (169) /mirrors.html freq=722 (internal traffic: 0.34, orig_status=200)
@@ -1687,6 +1764,7 @@ class TestPatterns(unittest.TestCase):
         self.assertEquals(r.status_code, 200)
     
     
+    @unittest.skip("disabled")
     def url_170(self, user=anonymous_user_classic):
         """
         (170) /config/aspcms_config.asp freq=711 (internal traffic: 0.75, orig_status=404)
@@ -1695,6 +1773,7 @@ class TestPatterns(unittest.TestCase):
         self.assertEquals(r.status_code, 404)
     
     
+    @unittest.skip("disabled")
     def url_171(self, user=anonymous_user_classic):
         """
         (171) /abs_doc/journals2.html freq=683 (internal traffic: 0.25, orig_status=200)
@@ -1703,6 +1782,7 @@ class TestPatterns(unittest.TestCase):
         self.assertEquals(r.status_code, 200)
     
     
+    @unittest.skip("disabled")
     def url_172(self, user=anonymous_user_classic):
         """
         (172) /cgi-bin/get_file?<params> freq=683 (internal traffic: 0.53, orig_status=200)
@@ -1711,6 +1791,7 @@ class TestPatterns(unittest.TestCase):
         self.assertEquals(r.status_code, 200)
     
     
+    @unittest.skip("disabled")
     def url_173(self, user=anonymous_user_classic):
         """
         (173) /doi/<19> freq=659 (internal traffic: 0.01, orig_status=200)
@@ -1719,6 +1800,7 @@ class TestPatterns(unittest.TestCase):
         self.assertEquals(r.status_code, 200)
     
     
+    @unittest.skip("disabled")
     def url_174(self, user=anonymous_user_classic):
         """
         (174) /full/<3/19/25> freq=659 (internal traffic: 1.00, orig_status=200)
@@ -1727,6 +1809,7 @@ class TestPatterns(unittest.TestCase):
         self.assertEquals(r.status_code, 200)
     
     
+    @unittest.skip("disabled")
     def url_175(self, user=anonymous_user_classic):
         """
         (175) /utility/convert/data/config.inc.php freq=652 (internal traffic: 0.66, orig_status=404)
@@ -1735,6 +1818,7 @@ class TestPatterns(unittest.TestCase):
         self.assertEquals(r.status_code, 404)
     
     
+    @unittest.skip("disabled")
     def url_176(self, user=anonymous_user_classic):
         """
         (176) /figs/newlogo.gif freq=650 (internal traffic: 0.76, orig_status=206)
@@ -1743,6 +1827,7 @@ class TestPatterns(unittest.TestCase):
         self.assertEquals(r.status_code, 206)
     
     
+    @unittest.skip("disabled")
     def url_177(self, user=anonymous_user_classic):
         """
         (177) /abs_doc/refereed.html freq=640 (internal traffic: 0.38, orig_status=200)
@@ -1751,6 +1836,7 @@ class TestPatterns(unittest.TestCase):
         self.assertEquals(r.status_code, 200)
     
     
+    @unittest.skip("disabled")
     def url_178(self, user=anonymous_user_classic):
         """
         (178) /article_service.html freq=629 (internal traffic: 0.54, orig_status=200)
@@ -1759,6 +1845,7 @@ class TestPatterns(unittest.TestCase):
         self.assertEquals(r.status_code, 200)
     
     
+    @unittest.skip("disabled")
     def url_179(self, user=anonymous_user_classic):
         """
         (179) /full/<6/4/5/4/24> freq=625 (internal traffic: 0.72, orig_status=200)
@@ -1767,6 +1854,7 @@ class TestPatterns(unittest.TestCase):
         self.assertEquals(r.status_code, 200)
     
     
+    @unittest.skip("disabled")
     def url_180(self, user=anonymous_user_classic):
         """
         (180) /index.php?<params> freq=605 (internal traffic: 0.69, orig_status=404)
@@ -1775,6 +1863,7 @@ class TestPatterns(unittest.TestCase):
         self.assertEquals(r.status_code, 404)
     
     
+    @unittest.skip("disabled")
     def url_181(self, user=anonymous_user_classic):
         """
         (181) /doi/<7/5/9> freq=597 (internal traffic: 0.00, orig_status=200)
@@ -1783,6 +1872,7 @@ class TestPatterns(unittest.TestCase):
         self.assertEquals(r.status_code, 200)
     
     
+    @unittest.skip("disabled")
     def url_182(self, user=anonymous_user_classic):
         """
         (182) /abs_doc/help_pages/art_retrieve.html freq=591 (internal traffic: 0.39, orig_status=200)
@@ -1791,6 +1881,7 @@ class TestPatterns(unittest.TestCase):
         self.assertEquals(r.status_code, 200)
     
     
+    @unittest.skip("disabled")
     def url_183(self, user=anonymous_user_classic):
         """
         (183) /abstract_service.html?<params> freq=583 (internal traffic: 0.58, orig_status=500)
@@ -1799,6 +1890,7 @@ class TestPatterns(unittest.TestCase):
         self.assertEquals(r.status_code, 500)
     
     
+    @unittest.skip("disabled")
     def url_184(self, user=anonymous_user_classic):
         """
         (184) /index.html freq=579 (internal traffic: 0.13, orig_status=200)
@@ -1807,6 +1899,7 @@ class TestPatterns(unittest.TestCase):
         self.assertEquals(r.status_code, 200)
     
     
+    @unittest.skip("disabled")
     def url_185(self, user=anonymous_user_classic):
         """
         (185) /plus/90sec.php freq=576 (internal traffic: 0.67, orig_status=404)
@@ -1815,6 +1908,7 @@ class TestPatterns(unittest.TestCase):
         self.assertEquals(r.status_code, 404)
     
     
+    @unittest.skip("disabled")
     def url_186(self, user=anonymous_user_classic):
         """
         (186) /doi/<7/6> freq=563 (internal traffic: 0.34, orig_status=200)
@@ -1823,6 +1917,7 @@ class TestPatterns(unittest.TestCase):
         self.assertEquals(r.status_code, 200)
     
     
+    @unittest.skip("disabled")
     def url_187(self, user=anonymous_user_classic):
         """
         (187) /doi/<7/4/6> freq=561 (internal traffic: 0.38, orig_status=200)
@@ -1831,6 +1926,7 @@ class TestPatterns(unittest.TestCase):
         self.assertEquals(r.status_code, 200)
     
     
+    @unittest.skip("disabled")
     def url_188(self, user=anonymous_user_classic):
         """
         (188) /journals_service.html freq=558 (internal traffic: 0.32, orig_status=200)
@@ -1839,6 +1935,7 @@ class TestPatterns(unittest.TestCase):
         self.assertEquals(r.status_code, 200)
     
     
+    @unittest.skip("disabled")
     def url_189(self, user=anonymous_user_classic):
         """
         (189) /abs_doc/site_map/map.html freq=556 (internal traffic: 0.97, orig_status=200)
@@ -1847,6 +1944,7 @@ class TestPatterns(unittest.TestCase):
         self.assertEquals(r.status_code, 200)
     
     
+    @unittest.skip("disabled")
     def url_190(self, user=anonymous_user_classic):
         """
         (190) /abs_doc/site_map/images/question.gif freq=550 (internal traffic: 1.00, orig_status=200)
@@ -1855,6 +1953,7 @@ class TestPatterns(unittest.TestCase):
         self.assertEquals(r.status_code, 200)
     
     
+    @unittest.skip("disabled")
     def url_191(self, user=anonymous_user_classic):
         """
         (191) /doi/<7/17> freq=549 (internal traffic: 0.00, orig_status=404)
@@ -1863,6 +1962,7 @@ class TestPatterns(unittest.TestCase):
         self.assertEquals(r.status_code, 404)
     
     
+    @unittest.skip("disabled")
     def url_192(self, user=anonymous_user_classic):
         """
         (192) /cgi-bin/dexterstart.pl?<params> freq=544 (internal traffic: 0.47, orig_status=200)
@@ -1871,6 +1971,7 @@ class TestPatterns(unittest.TestCase):
         self.assertEquals(r.status_code, 200)
     
     
+    @unittest.skip("disabled")
     def url_193(self, user=anonymous_user_classic):
         """
         (193) /fdgq.php freq=538 (internal traffic: 0.64, orig_status=404)
@@ -1879,6 +1980,7 @@ class TestPatterns(unittest.TestCase):
         self.assertEquals(r.status_code, 404)
     
     
+    @unittest.skip("disabled")
     def url_194(self, user=anonymous_user_classic):
         """
         (194) /abs_doc/site_map/desc.html freq=532 (internal traffic: 0.99, orig_status=200)
@@ -1887,6 +1989,7 @@ class TestPatterns(unittest.TestCase):
         self.assertEquals(r.status_code, 200)
     
     
+    @unittest.skip("disabled")
     def url_195(self, user=anonymous_user_classic):
         """
         (195) /abs_doc/help_pages/citations.html freq=523 (internal traffic: 0.56, orig_status=200)
@@ -1895,6 +1998,7 @@ class TestPatterns(unittest.TestCase):
         self.assertEquals(r.status_code, 200)
     
     
+    @unittest.skip("disabled")
     def url_196(self, user=anonymous_user_classic):
         """
         (196) /abstract_service.html freq=519 (internal traffic: 0.27, orig_status=200)
@@ -1903,6 +2007,7 @@ class TestPatterns(unittest.TestCase):
         self.assertEquals(r.status_code, 200)
     
     
+    @unittest.skip("disabled")
     def url_197(self, user=anonymous_user_classic):
         """
         (197) /abs... freq=516 (internal traffic: 1.00, orig_status=404)
@@ -1911,6 +2016,7 @@ class TestPatterns(unittest.TestCase):
         self.assertEquals(r.status_code, 404)
     
     
+    @unittest.skip("disabled")
     def url_198(self, user=anonymous_user_classic):
         """
         (198) /plus/mytag_js.php?<params> freq=509 (internal traffic: 0.67, orig_status=404)
@@ -1919,4 +2025,9 @@ class TestPatterns(unittest.TestCase):
         self.assertEquals(r.status_code, 404)
     
 if __name__ == '__main__':
-    unittest.main()
+    #unittest.main()
+    
+    suite = unittest.makeSuite(TestPatterns, prefix='url_' )
+    runner = unittest.TextTestRunner(descriptions=False, verbosity=2)
+    print runner.run(suite).wasSuccessful()
+    
