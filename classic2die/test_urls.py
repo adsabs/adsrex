@@ -239,7 +239,6 @@ class TestPatterns(unittest.TestCase):
         """
         (015) / freq=225000 (internal traffic: 0.14, orig_status=200)
         """
-        # for AA: this displays the classic form, shouldn't it redirect to BBB?
         r = user.get('/')
         self.assertRedirected(user, r, '')
         
@@ -709,7 +708,6 @@ class TestPatterns(unittest.TestCase):
         """
         (054) /figs/ads_logo_medium_dark_trans_background.png freq=8416 (internal traffic: 0.00, orig_status=200)
         """
-        # AA: this fails, but classic has it
         r = user.get('/figs/ads_logo_medium_dark_trans_background.png')
         self.assertEquals(r.status_code, 200)
         self.assertEquals(r.headers['Content-Type'], 'image/png')
@@ -823,7 +821,6 @@ class TestPatterns(unittest.TestCase):
         """
         r = user.head('/cgi-bin/nph-data_query?bibcode=1988JOSAB...5..243D&link_type=ARTICLE&db_key=PHY&high=')
         
-        # AA: strangely, this only works in browser; the parameters are not filled in 
         self.assertRedirected(user, r, '/link_gateway/1988JOSAB...5..243D/esource')
         
         r = user.get(r.headers['location'])
