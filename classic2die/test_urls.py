@@ -131,15 +131,15 @@ class TestPatterns(unittest.TestCase):
         """
         
         # this query is valid, but finds nothing on classic side; but it asks for XML (which should go through)
-        r = user.get('/cgi-bin/nph-abs_connect?qsearch=&bibcode=0803983468&start_nr=0&nr_to_return=30&sort=SCORE&data_type=XML&version=1')
+        r = user.get('/cgi-bin/nph-abs_connect?qsearch=bibcode=0803983468&start_nr=0&nr_to_return=30&sort=SCORE&data_type=XML&version=1')
         self.assertEquals(r.status_code, 200)
         self.assertTrue('</records>' in r.text)
         
-        r = user.get('/cgi-bin/nph-abs_connect?qsearch=&bibcode=0803983468&start_nr=0&nr_to_return=30&sort=SCORE&data_type=HTM&version=1')
-        self.assertRedirected(user, r, '/tugboat/classicSearchRedirect?qsearch=&bibcode=0803983468&start_nr=0&nr_to_return=30&sort=SCORE&data_type=HTM&version=1')
+        r = user.get('/cgi-bin/nph-abs_connect?qsearch=bibcode=0803983468&start_nr=0&nr_to_return=30&sort=SCORE&data_type=HTM&version=1')
+        self.assertRedirected(user, r, '/tugboat/classicSearchRedirect?qsearch=bibcode=0803983468&start_nr=0&nr_to_return=30&sort=SCORE&data_type=HTM&version=1')
         
         r = user.get(r.headers['Location'])
-        self.assertRedirected(user, r, '/search/q%3D%2A:%2A%26sort%3Ddate%20desc%2C%20bibcode%20desc%26rows%3D30%26start%3D0%26format%3DHTM%26unprocessed_parameter%3DAll%20object%20queries%20include%20SIMBAD%20and%20NED%20search%20results.%26unprocessed_parameter%3DPlease%20note%20Min%20Score%20is%20deprecated.%26unprocessed_parameter%3DUse%20For%20Weighting%26unprocessed_parameter%3DRelative%20Weights%26unprocessed_parameter%3DWeighted%20Scoring%26unprocessed_parameter%3DSynonym%20Replacement/')
+        self.assertRedirected(user, r, '/search/q=bibcode%3D0803983468&sort=date%20desc%2C%20bibcode%20desc&rows=30&start=0&format=HTM&unprocessed_parameter=All%20object%20queries%20include%20SIMBAD%20and%20NED%20search%20results.&unprocessed_parameter=Please%20note%20Min%20Score%20is%20deprecated.&unprocessed_parameter=All%20object%20queries%20include%20SIMBAD%20and%20NED%20search%20results.&unprocessed_parameter=Use%20For%20Weighting&unprocessed_parameter=Relative%20Weights&unprocessed_parameter=Weighted%20Scoring&unprocessed_parameter=Synonym%20Replacement/', 302)
 
         
         # ERROR: this fills the form with '*:*' query and completely forgets the submitted value
