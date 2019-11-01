@@ -1,5 +1,5 @@
 git+https://github.com/adsabs/ADSMicroserviceUtils.git@v1.1.2
-requests==2.19.1
+requests==2.20.0
 mock
 httpretty
 coveralls
