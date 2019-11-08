@@ -319,8 +319,8 @@ class TestPatterns(unittest.TestCase):
         """
         (024) /cgi-bin/nph-ref_history?<params> freq=87250 (internal traffic: 0.91, orig_status=200)
         """
-        r = user.get('/cgi-bin/nph-ref_history?refs=AR&bibcode=2019arXiv190900340K')
-        self.assertRedirected(user, r, '/abs/2019arXiv190900340K/metrics')
+        r = user.get('/cgi-bin/nph-ref_history?refs=AR&bibcode=2019arXiv190900340KXXX')
+        self.assertRedirected(user, r, '/abs/2019arXiv190900340KXXX/metrics')
         
         # AA, SBC: this is interesting; the paper in question doesn't have metrics
         # Core returns 400 and default bbb page, which loads the abstract and switches
@@ -2011,6 +2011,14 @@ if __name__ == '__main__':
     #unittest.main()
     
     suite = unittest.makeSuite(TestPatterns, prefix='url_' )
+    
+    filter = ['005', '024', '028', '030', '033', '037', '049']
+    tests = []
+    for t in suite._tests:
+        if t.id().split('_')[-1] in filter:
+            tests.append(t)
+    suite._tests = tests
+    
     runner = unittest.TextTestRunner(descriptions=False, verbosity=2)
     print runner.run(suite).wasSuccessful()
     

@@ -173,6 +173,11 @@ api_resources = {
             "/vault/configuration",
             "/vault/configuration/<key>",
             "/vault/execute_query/<queryid>",
+            "/vault/get-myads/<user_id>",
+            "/vault/myads-import",
+            "/vault/myads-users/<iso_datestring>",
+            "/vault/notifications",
+            "/vault/notifications/<myads_id>",
             "/vault/query",
             "/vault/query2svg/<queryid>",
             "/vault/query/<queryid>",
@@ -183,7 +188,7 @@ api_resources = {
             "/vis/paper-network",
             "/vis/ready",
             "/vis/word-cloud",
-        ]
+            ]
     },
     "adsws.feedback": {
         "base": "/v1/feedback",
@@ -235,7 +240,8 @@ class CitationHelperServiceTest(unittest.TestCase):
         r = anonymous_user.get( url + '/resources')
         resources = r.json()
         
-        self.assertDictContainsSubset(api_resources, resources)
+        for k, v in api_resources.items():
+            self.assertItemsEqual(api_resources[k], resources[k])
     
     def test_limits_authenticated(self):    
         self.check_limits(user=authenticated_user)
