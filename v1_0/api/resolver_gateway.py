@@ -16,11 +16,11 @@ class ResolverGatewayTest(unittest.TestCase):
         r = anonymous_user.get(config.API_URL.rsplit('/', 1)[0] + '/link_gateway/2018EPJWC.18612003D/abstract')
         self.assertEqual(r.status_code, 200)
 
-    def check_resolver_gateway(self):
-        self.check_resolver_service()
+    def test_authenticated_user(self):
+        self.check_resolver_gateway()
 
-    def check_resolver_gateway(self):
-        self.check_resolver_service(user=bumblebee_user)
+    def test_bumblebee_user(self):
+        self.check_resolver_gateway(user=bumblebee_user)
 
 if __name__ == '__main__':
     unittest.main()
