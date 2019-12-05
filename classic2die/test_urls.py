@@ -25,6 +25,8 @@ class TestPatterns(unittest.TestCase):
             expected = '%s%s' % (user.get_config('BBB_URL'), target)
             u = urlparse(expected)
             expected = u.geturl().replace(u.path, u.path.replace('//', '/'))
+        else:
+            expected = target
         self.assertEquals(r.headers['Location'], expected)
     
     def p(self, r):
@@ -818,7 +820,7 @@ class TestPatterns(unittest.TestCase):
         self.assertRedirected(user, r, '/link_gateway/1988JOSAB...5..243D/article')
         
         r = user.get(r.headers['location'])
-        self.assertRedirected(user, r, 'http://josab.osa.org/abstract.cfm?id=5067', 302)
+        self.assertRedirected(user, r, 'http://josab.osa.org/ViewMedia.cfm?id=5067&seq=0', 302)
         
     
     
