@@ -44,8 +44,9 @@ class TestIt(unittest.TestCase):
         r = authenticated_user.post('/vault/query', json={'q': '*:*'})
         assert r.status_code == 200
         assert isinstance(r.json(), dict)
-        qid = r.json()['qid']
+        qid = r.json()['qid'] # d6980601bf770d5e4f39f6766336cf87
         numFound = r.json()['numFound']
+        assert qid == 'd6980601bf770d5e4f39f6766336cf87'
         
         r = authenticated_user.get('/vault/query/%s' % qid)
         assert r.status_code == 200
@@ -55,9 +56,9 @@ class TestIt(unittest.TestCase):
         assert r.status_code == 200
         assert r.json()['responseHeader']['params']['q'] == '*:*'
         assert r.json()['responseHeader']['params']['fl'] == 'id'
-        assert r.json()['responseHeader']['params']['x-amzn-trace-id']
         assert r.json()['response']
-        self.assertAlmostEqual(r.json()['response']['numFound'], int(numFound), delta=100000)
+        assert r.json()['response']['numFound'] > 14000000 # as of dec 4 2019
+        self.assertAlmostEqual(r.json()['response']['numFound'], int(numFound), delta=1000000)
         
         r = authenticated_user.get('/vault/execute_query/%s?fl=recid' % qid)
         assert r.status_code == 200
