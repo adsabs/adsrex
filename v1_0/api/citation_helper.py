@@ -21,7 +21,7 @@ class CitationHelperServiceTest(unittest.TestCase):
         expected_attr = ['title', 'bibcode', 'score', 'author']
         for item in r.json():
             self.assertIsInstance(item, dict)
-            self.assertListEqual(item.keys(), expected_attr)
+            self.assertCountEqual(list(item.keys()), expected_attr)
     
     def test_bumblebee_user(self):
         self.test_authenticated_user(user=bumblebee_user)

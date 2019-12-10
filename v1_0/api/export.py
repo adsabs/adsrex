@@ -14,21 +14,21 @@ class ExportServiceTest(unittest.TestCase):
         data = {"bibcode": ["2018EPJWC.18612003D"], "sort": "date desc, bibcode desc",
                 "maxauthor": 2, "authorcutoff": 10, "keyformat": "%1H:%Y"}
         r = user.post('/export/bibtex', json=data)
-        self.assertTrue(r.json() == {u'msg': u'Retrieved 1 abstracts, starting with number 1.',
-                                     u'export': u'@INPROCEEDINGS{Damon:2018,\n'
-                                                u'       author = {{Damon}, James and {Henneken}, Edwin and {Accomazzi}, Alberto},\n'
-                                                u'        title = "{Managing Institutional Bibliographies using the ADS API: A new workflow using Google Sheets}",\n'
-                                                u'    booktitle = {European Physical Journal Web of Conferences},\n'
-                                                u'         year = "2018",\n'
-                                                u'       series = {European Physical Journal Web of Conferences},\n'
-                                                u'       volume = {186},\n'
-                                                u'        month = "Jul",\n'
-                                                u'          eid = {12003},\n'
-                                                u'        pages = {12003},\n'
-                                                u'          doi = {10.1051/epjconf/201818612003},\n'
-                                                u'       adsurl = {https://dev.adsabs.harvard.edu/abs/2018EPJWC.18612003D},\n'
-                                                u'      adsnote = {Provided by the SAO/NASA Astrophysics Data System}\n'
-                                                u'}\n\n'
+        self.assertTrue(r.json() == {'msg': 'Retrieved 1 abstracts, starting with number 1.',
+                                     'export': '@INPROCEEDINGS{Damon:2018,\n'
+                                                '       author = {{Damon}, James and {Henneken}, Edwin and {Accomazzi}, Alberto},\n'
+                                                '        title = "{Managing Institutional Bibliographies using the ADS API: A new workflow using Google Sheets}",\n'
+                                                '    booktitle = {European Physical Journal Web of Conferences},\n'
+                                                '         year = "2018",\n'
+                                                '       series = {European Physical Journal Web of Conferences},\n'
+                                                '       volume = {186},\n'
+                                                '        month = "Jul",\n'
+                                                '          eid = {12003},\n'
+                                                '        pages = {12003},\n'
+                                                '          doi = {10.1051/epjconf/201818612003},\n'
+                                                '       adsurl = {https://dev.adsabs.harvard.edu/abs/2018EPJWC.18612003D},\n'
+                                                '      adsnote = {Provided by the SAO/NASA Astrophysics Data System}\n'
+                                                '}\n\n'
                                      })
 
     def test_authenticated_user(self):

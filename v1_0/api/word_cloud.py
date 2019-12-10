@@ -24,10 +24,10 @@ class VisServiceTest(unittest.TestCase):
         self.assertIsInstance(data, dict)
         # Each entry of this dictionary is a dictionary
         expected_attr = ['idf','record_count','total_occurrences']
-        for entry in data.values():
+        for entry in list(data.values()):
             self.assertIsInstance(entry, dict)
             # With expected keys
-            self.assertItemsEqual(expected_attr, entry.keys())
+            self.assertCountEqual(expected_attr, list(entry.keys()))
 
     def test_authenticated_user(self):
         self.check_word_cloud()

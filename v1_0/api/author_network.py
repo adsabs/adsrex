@@ -30,16 +30,16 @@ class AuthorNetworkTest(unittest.TestCase):
         self.assertIn('msg', data)
         self.assertIn('data', data)
         # Check the attributes of the 'data' entry
-        expected_attr = [u'bibcode_dict', u'root', u'link_data']
-        self.assertItemsEqual(expected_attr, data['data'].keys())
+        expected_attr = ['bibcode_dict', 'root', 'link_data']
+        self.assertCountEqual(expected_attr, list(data['data'].keys()))
         # We expect the 'bibcode_dict' to be a dictionary of dictionaries
         bib_attr = ['read_count','title','citation_count','authors']
-        for bibcode, bibinfo in data['data']['bibcode_dict'].items():
+        for bibcode, bibinfo in list(data['data']['bibcode_dict'].items()):
             # Extremely basic bibcode format check
             self.assertEqual(len(bibcode), 19)
             # Value should be a dictionary with expected keys
             self.assertIsInstance(bibinfo, dict)
-            self.assertItemsEqual(bib_attr, bibinfo.keys())
+            self.assertCountEqual(bib_attr, list(bibinfo.keys()))
         # The 'root' entry should have two attributes: 'name' and 'children'
         self.assertIn('name', data['data']['root'])
         self.assertIn('children', data['data']['root'])

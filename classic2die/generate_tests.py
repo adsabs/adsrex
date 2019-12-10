@@ -16,7 +16,7 @@ def run(*input_files):
             i += 1
             freq,freqinternal,status,verb,pattern,example = line.strip().split('\t')
             
-            print '''def url_%(i)03d(self, user=anonymous_user_classic):
+            print('''def url_%(i)03d(self, user=anonymous_user_classic):
     """
     (%(i)03d) %(pattern)s freq=%(freq)s (internal traffic: %(internal)3.2f, orig_status=%(status)s)
     """
@@ -24,7 +24,7 @@ def run(*input_files):
     self.assertEquals(r.status_code, %(status)s)
 
 ''' % dict(i=i, pattern=pattern, freq=freq, internal=float(freqinternal)/float(freq), status=status, 
-       method=verbs.get(verb, 'unknown'), example=example)
+       method=verbs.get(verb, 'unknown'), example=example))
         
         
 

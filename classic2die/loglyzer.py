@@ -39,7 +39,7 @@ def run(*log_files):
             try:
                 row = apache2_logrow(line)
                 harvest(row, collection)
-            except Exception, exc:
+            except Exception as exc:
                 sys.stderr.write(str(exc) + '\n')
                 e += 1
             if i % 1000000 == 0:
@@ -50,10 +50,10 @@ def run(*log_files):
     printout(collection)
 
 def printout(collection):
-    print '#entries\t#internal\tstatus\tverb\tpattern\texample'
+    print('#entries\t#internal\tstatus\tverb\tpattern\texample')
     
-    for k,v in sorted(collection.items(), key=lambda x: x[1]['#count'], reverse=True):
-        print '%5s\t%5s\t%s\t%s' % (v['#count'], v['#classic'], '\t'.join(k.split(' ')), v['#example'])
+    for k,v in sorted(list(collection.items()), key=lambda x: x[1]['#count'], reverse=True):
+        print('%5s\t%5s\t%s\t%s' % (v['#count'], v['#classic'], '\t'.join(k.split(' ')), v['#example']))
 
 def harvest(row, collection):
 
@@ -73,7 +73,7 @@ def harvest(row, collection):
     for s in ['/abs/', '/doi/', '/full/', '/pdf', '/articles/abstracts/']:
         if target.startswith(s):
             r = target[len(s):]
-            x = '/'.join(map(lambda x: str(len(x)), target[len(s):].split('/')))
+            x = '/'.join([str(len(x)) for x in target[len(s):].split('/')])
             target = '%s<%s>' % (s, x)
 
     key = '%s %s %s' % (status, verb, target)

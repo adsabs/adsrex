@@ -31,18 +31,18 @@ class GraphicsServiceTest(unittest.TestCase):
         # The list of figures should not be empty
         self.assertTrue(len(data['figures']) > 0)
         # A figure in the list of figures should have expected attributes
-        expected_attr = [u'images', u'figure_caption', u'figure_label', u'figure_id']
-        self.assertListEqual(data['figures'][0].keys(), expected_attr)
+        expected_attr = ['images', 'figure_caption', 'figure_label', 'figure_id']
+        self.assertListEqual(list(data['figures'][0].keys()), expected_attr)
         # The attribute 'images' refers to a list
         self.assertIsInstance(data['figures'][0]['images'], list)
         # The list of images should not be empty
         self.assertTrue(len(data['figures'][0]['images']) > 0)
         # The list of images should contain dictionaries
         # with expected attributes
-        im_attr = [u'image_id', u'format', u'thumbnail', u'highres']
+        im_attr = ['image_id', 'format', 'thumbnail', 'highres']
         for im in data['figures'][0]['images']:
             self.assertIsInstance(im, dict)
-            self.assertListEqual(im.keys(), im_attr)
+            self.assertCountEqual(im.keys(), im_attr)
         # A non-existing bibcode should still return a 200
         r = user.get('/graphics/foo')
         self.assertEqual(r.status_code, 200)

@@ -240,8 +240,8 @@ class CitationHelperServiceTest(unittest.TestCase):
         r = anonymous_user.get( url + '/resources')
         resources = r.json()
         
-        for k, v in api_resources.items():
-            self.assertItemsEqual(api_resources[k], resources[k])
+        for k, v in list(api_resources.items()):
+            self.assertCountEqual(api_resources[k], resources[k])
     
     def test_limits_authenticated(self):    
         self.check_limits(user=authenticated_user)
@@ -280,11 +280,11 @@ class CitationHelperServiceTest(unittest.TestCase):
         
         # repeating the bootstrap request should give you the
         # same access token
-        for x in xrange(5):
+        for x in range(5):
             r = anonymous_user.get('/accounts/bootstrap', params=params, headers={'Authorization': 'Bearer %s' % b['access_token']})
             assert r.json()['access_token'] == b['access_token']
             
-        for x in xrange(5):
+        for x in range(5):
             r = authenticated_user.get('/accounts/bootstrap', params=params)
             assert r.json()['access_token'] == a['access_token']
             

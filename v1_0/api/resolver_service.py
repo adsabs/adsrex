@@ -10,10 +10,10 @@ class ResolverServiceTest(unittest.TestCase):
 
     def check_resolver_service(self, user=authenticated_user):
         r = user.get('/resolver/2018EPJWC.18612003D/abstract')
-        self.assertTrue(r.json() == {u'action': u'redirect', u'link': u'/abs/2018EPJWC.18612003D/abstract', u'service': u'/abs/2018EPJWC.18612003D/abstract', u'link_type': u'ABSTRACT'})
+        self.assertTrue(r.json() == {'action': 'redirect', 'link': '/abs/2018EPJWC.18612003D/abstract', 'service': '/abs/2018EPJWC.18612003D/abstract', 'link_type': 'ABSTRACT'})
 
         r = user.get('/resolver/2018EPJWC.18612003D/esource')
-        self.assertTrue(r.json() == {u'action': u'redirect', u'link': u'https://doi.org/10.1051%2Fepjconf%2F201818612003', u'service': u'https://doi.org/10.1051%2Fepjconf%2F201818612003', u'link_type': u'ESOURCE'})
+        self.assertTrue(r.json() == {'action': 'redirect', 'link': 'https://doi.org/10.1051%2Fepjconf%2F201818612003', 'service': 'https://doi.org/10.1051%2Fepjconf%2F201818612003', 'link_type': 'ESOURCE'})
 
     def test_authenticated_user(self):
         self.check_resolver_service()

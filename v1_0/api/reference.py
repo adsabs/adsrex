@@ -12,7 +12,7 @@ class ReferenceServiceTest(unittest.TestCase):
     def check_reference_service(self, user=authenticated_user):
         data = {"reference":["Damon 2018, European Physical Journal Web of Conferences, 186, 12003"]}
         r = user.post('/reference/text', json=data)
-        self.assertTrue(r.json() == {u'resolved': u'0.7 2018EPJWC.18612003D -- Damon 2018, European Physical Journal Web of Conferences, 186, 12003'})
+        self.assertTrue(r.json() == {'resolved': '0.7 2018EPJWC.18612003D -- Damon 2018, European Physical Journal Web of Conferences, 186, 12003'})
 
     def test_authenticated_user(self):
         self.check_reference_service()

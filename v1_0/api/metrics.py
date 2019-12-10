@@ -18,63 +18,63 @@ class MetricsServiceTest(unittest.TestCase):
         # The results should be in a dictionary
         self.assertIsInstance(r.json(), dict)
         # Check if we get the expected attributes
-        expected_attr = [u'basic stats', u'citation stats refereed',
-                         u'histograms', u'citation stats', u'time series',
-                         u'basic stats refereed', u'indicators refereed',
-                         u'skipped bibcodes', u'indicators']
-        self.assertItemsEqual(r.json().keys(), expected_attr)
+        expected_attr = ['basic stats', 'citation stats refereed',
+                         'histograms', 'citation stats', 'time series',
+                         'basic stats refereed', 'indicators refereed',
+                         'skipped bibcodes', 'indicators']
+        self.assertCountEqual(list(r.json().keys()), expected_attr)
         # Check if we retrieved all histograms
-        expected_hists = [u'downloads', u'citations', u'reads', u'publications']
-        self.assertListEqual(r.json()['histograms'].keys(), expected_hists)
+        expected_hists = ['downloads', 'citations', 'reads', 'publications']
+        self.assertCountEqual(list(r.json()['histograms'].keys()), expected_hists)
         # All histograms should have the expected constituents
         histdict = {
-            'downloads': [u'refereed downloads', u'all downloads normalized',
-                          u'all downloads', u'refereed downloads normalized'],
-            'reads': [u'refereed reads', u'all reads normalized', 
-                      u'all reads', u'refereed reads normalized'],
-            'publications': [u'refereed publications', u'all publications',
-                             u'refereed publications normalized',
-                             u'all publications normalized'],
-            'citations': [u'refereed to nonrefereed', u'nonrefereed to nonrefereed',
-                          u'nonrefereed to nonrefereed normalized', u'nonrefereed to refereed',
-                          u'refereed to refereed normalized', u'refereed to nonrefereed normalized',
-                          u'refereed to refereed', u'nonrefereed to refereed normalized']
+            'downloads': ['refereed downloads', 'all downloads normalized',
+                          'all downloads', 'refereed downloads normalized'],
+            'reads': ['refereed reads', 'all reads normalized', 
+                      'all reads', 'refereed reads normalized'],
+            'publications': ['refereed publications', 'all publications',
+                             'refereed publications normalized',
+                             'all publications normalized'],
+            'citations': ['refereed to nonrefereed', 'nonrefereed to nonrefereed',
+                          'nonrefereed to nonrefereed normalized', 'nonrefereed to refereed',
+                          'refereed to refereed normalized', 'refereed to nonrefereed normalized',
+                          'refereed to refereed', 'nonrefereed to refereed normalized']
                    }
         for hist in expected_hists:
-            self.assertItemsEqual(r.json()['histograms'][hist].keys(), histdict[hist])
+            self.assertCountEqual(list(r.json()['histograms'][hist].keys()), histdict[hist])
         # All histogram constituents should be dictionaries
         for hist in expected_hists:
             for hh in histdict[hist]:
                 self.assertIsInstance(r.json()['histograms'][hist][hh], dict)
         # Did we get all expected indicators?
         expected_stats = {
-            'indicators': [u'g', u'read10', u'm', u'i10', u'riq', u'h', u'i100', u'tori'],
-            'indicators refereed': [u'g', u'read10', u'm', u'i10', u'riq', u'h', u'i100', u'tori'],
-            'basic stats': [u'average number of downloads', u'average number of reads', u'median number of downloads', u'median number of reads', 
-                            u'normalized paper count', u'number of papers', u'recent number of downloads', u'recent number of reads',
-                            u'total number of downloads', u'total number of reads'],
-            'basic stats refereed': [u'median number of downloads', u'average number of reads',
-                            u'normalized paper count', u'recent number of reads', u'number of papers',
-                            u'recent number of downloads', u'total number of reads',
-                            u'median number of reads', u'total number of downloads',
-                            u'average number of downloads'],
-            'citation stats': [u'average number of citations', u'average number of refereed citations', u'median number of citations', 
-                               u'median number of refereed citations', u'normalized number of citations', u'normalized number of refereed citations', 
-                               u'number of citing papers', u'number of self-citations', u'self-citations', u'total number of citations', 
-                               u'total number of refereed citations'],
+            'indicators': ['g', 'read10', 'm', 'i10', 'riq', 'h', 'i100', 'tori'],
+            'indicators refereed': ['g', 'read10', 'm', 'i10', 'riq', 'h', 'i100', 'tori'],
+            'basic stats': ['average number of downloads', 'average number of reads', 'median number of downloads', 'median number of reads', 
+                            'normalized paper count', 'number of papers', 'recent number of downloads', 'recent number of reads',
+                            'total number of downloads', 'total number of reads'],
+            'basic stats refereed': ['median number of downloads', 'average number of reads',
+                            'normalized paper count', 'recent number of reads', 'number of papers',
+                            'recent number of downloads', 'total number of reads',
+                            'median number of reads', 'total number of downloads',
+                            'average number of downloads'],
+            'citation stats': ['average number of citations', 'average number of refereed citations', 'median number of citations', 
+                               'median number of refereed citations', 'normalized number of citations', 'normalized number of refereed citations', 
+                               'number of citing papers', 'number of self-citations', 'self-citations', 'total number of citations', 
+                               'total number of refereed citations'],
             'citation stats refereed': 
-                               [u'normalized number of citations', u'average number of refereed citations', 
-                                u'median number of citations', u'median number of refereed citations', 
-                                u'number of citing papers', u'average number of citations', 
-                                u'total number of refereed citations', u'normalized number of refereed citations', 
-                                u'number of self-citations', u'total number of citations'],
+                               ['normalized number of citations', 'average number of refereed citations', 
+                                'median number of citations', 'median number of refereed citations', 
+                                'number of citing papers', 'average number of citations', 
+                                'total number of refereed citations', 'normalized number of refereed citations', 
+                                'number of self-citations', 'total number of citations'],
                                
-            'time series': [u'g', u'h', u'tori', u'i10', u'read10', u'i100']        
+            'time series': ['g', 'h', 'tori', 'i10', 'read10', 'i100']        
         }
         for entry in expected_stats:
-            self.assertListEqual(sorted(r.json()[entry].keys()), sorted(expected_stats[entry]))#, 'Wrong values for "%s, got: %s"' % (entry, r.json()[entry].keys()))
+            self.assertCountEqual(sorted(r.json()[entry].keys()), sorted(expected_stats[entry]))#, 'Wrong values for "%s, got: %s"' % (entry, r.json()[entry].keys()))
         # There should be no skipped bibcodes
-        self.assertListEqual(r.json()['skipped bibcodes'], [])
+        self.assertCountEqual(r.json()['skipped bibcodes'], [])
         # Sending an empty list of bibcodes to the service should give a 403
         r = user.post('/metrics', json={'bibcodes': []})
         self.assertEqual(r.status_code, 403)

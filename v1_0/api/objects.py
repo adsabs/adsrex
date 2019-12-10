@@ -35,7 +35,7 @@ class ObjectServiceTest(unittest.TestCase):
         # Are we getting the expected response
         response = r.json()
         # The response has attribute 'query'
-        self.assertItemsEqual(response.keys(), ['query'])
+        self.assertCountEqual(list(response.keys()), ['query'])
         # We just want to know that the translated query
         # has the fields simbid:, ned: and abs: in it
         self.assertTrue(response['query'].find('simbid:') > 0)
@@ -50,7 +50,7 @@ class ObjectServiceTest(unittest.TestCase):
         # Check the content sent back
         response = r.json()
         # The keys of the response should be the identifiers submitted
-        self.assertItemsEqual(map(int, response.keys()), identifiers)
+        self.assertCountEqual(list(map(int, list(response.keys()))), identifiers)
 
     def test_bumblebee_user(self):
         self.test_authenticated_user(user=bumblebee_user)
