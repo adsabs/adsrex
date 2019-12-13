@@ -8,6 +8,8 @@ and set the values as described in the `config.py`
 The tests have to be *self-contained*, i.e. v1_0 should not 
 share any code with v1_1!
 
+*These tests are python 3.x!*
+
 ## How to write new tests
 
 There are 3 use types:

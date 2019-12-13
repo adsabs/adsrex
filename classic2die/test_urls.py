@@ -139,7 +139,7 @@ class TestPatterns(unittest.TestCase):
         self.assertRedirected(user, r, '/tugboat/classicSearchRedirect?qsearch=bibcode=0803983468&start_nr=0&nr_to_return=30&sort=SCORE&data_type=HTM&version=1')
         
         r = user.get(r.headers['Location'])
-        self.assertRedirected(user, r, '/search/q=bibcode%3D0803983468&sort=score%20desc&unprocessed_parameter=data_type&unprocessed_parameter=One%20or%20more%20weighted%20parameter%28s%29/', 302)
+        self.assertRedirected(user, r, '/search/q=bibcode%3D0803983468&sort=score%20desc&unprocessed_parameter=data_type/', 302)
 
         
         r = user.get(r.headers['Location'])
@@ -389,7 +389,7 @@ class TestPatterns(unittest.TestCase):
         self.assertRedirected(user, r, '/tugboat/classicSearchRedirect?return_req=no_params&author=Mattor,%20Nathan&db_key=PHY') # fails right now...
         
         r = user.head(r.headers['Location'])
-        self.assertRedirected(user, r, '/search/filter_database_fq_database=OR&filter_database_fq_database=database:"physics"&q=author%3A(%22Mattor%2C%20Nathan%22)&fq=%7B!type%3Daqp%20v%3D%24fq_database%7D&fq_database=(database%3A%22physics%22)&sort=date%20desc%2C%20bibcode%20desc&error_message=UNRECOGNIZABLE_VALUE&unprocessed_parameter=return_req&unprocessed_parameter=Use%20For%20Weighting&unprocessed_parameter=Relative%20Weights&unprocessed_parameter=Weighted%20Scoring&unprocessed_parameter=Synonym%20Replacement/', 302)
+        self.assertRedirected(user, r, '/search/filter_database_fq_database=OR&filter_database_fq_database=database:"physics"&q=author%3A(%22Mattor%2C%20Nathan%22)&fq=%7B!type%3Daqp%20v%3D%24fq_database%7D&fq_database=(database%3A%22physics%22)&sort=date%20desc%2C%20bibcode%20desc&error_message=UNRECOGNIZABLE_VALUE&unprocessed_parameter=return_req/', 302)
         
         # GS, TH: page loads, finds 48 results, but there is a warning 'Invalid value for parameter supplied'
         r = user.head(r.headers['Location'])
@@ -430,8 +430,8 @@ class TestPatterns(unittest.TestCase):
         self.assertRedirected(user, r, '/tugboat/classicSearchRedirect?aut_logic=OR&aut_xct=YES&author=Douglas%2C+A.+Vibert%0D%0ADouglas%2C+A.+V.&db_key=AST&db_key=PHY&end_year=1982&ned_query=YES&obj_logic=OR&sim_query=YES')
         
         r = user.get(r.headers['Location'])
-        
-        self.assertRedirected(user, r, '/search/filter_database_fq_database%3DOR%26filter_database_fq_database%3Ddatabase:%22astronomy%22%26filter_database_fq_database%3Ddatabase:%22physics%22%26q%3D%3Dauthor%3A%28%22Douglas%2C%20A.%20Vibert%22%20OR%20%22Douglas%2C%20A.%20V.%22%29%20AND%20pubdate%3A%5B%2A%20TO%201982-12%5D%26fq%3D%7B%21type%3Daqp%20v%3D%24fq_database%7D%26fq_database%3D%28database%3A%22astronomy%22%20OR%20database%3A%22physics%22%29%26sort%3Ddate%20desc%2C%20bibcode%20desc%26unprocessed_parameter%3DUse%20For%20Weighting%26unprocessed_parameter%3DRelative%20Weights%26unprocessed_parameter%3DWeighted%20Scoring%26unprocessed_parameter%3DSynonym%20Replacement%26unprocessed_parameter%3DParameters%20not%20processed%3A%20obj_logic/', 302)
+
+        self.assertRedirected(user, r, '/search/filter_database_fq_database%3DOR%26filter_database_fq_database%3Ddatabase:%22astronomy%22%26filter_database_fq_database%3Ddatabase:%22physics%22%26q%3D%3Dauthor%3A%28%22Douglas%2C%20A.%20Vibert%22%20OR%20%22Douglas%2C%20A.%20V.%22%29%20AND%20pubdate%3A%5B%2A%20TO%201982-12%5D%26fq%3D%7B%21type%3Daqp%20v%3D%24fq_database%7D%26fq_database%3D%28database%3A%22astronomy%22%20OR%20database%3A%22physics%22%29%26sort%3Ddate%20desc%2C%20bibcode%20desc%26unprocessed_parameter%3DParameters%20not%20processed%3A%20obj_logic/', 302)
 
         # we now display warnings about the use of AND operator
         r = user.head(r.headers['Location'])
@@ -536,7 +536,7 @@ class TestPatterns(unittest.TestCase):
         
 
         r = user.head(r.headers['Location'])
-        self.assertRedirected(user, r, '/search/q=doi%3A%2210.1021%2Facs.jcim.9b00620%22&sort=score%20desc&unprocessed_parameter=data_type&unprocessed_parameter=One%20or%20more%20weighted%20parameter%28s%29/', 302)
+        self.assertRedirected(user, r, '/search/q=doi%3A%2210.1021%2Facs.jcim.9b00620%22&sort=score%20desc&unprocessed_parameter=data_type/', 302)
         
         r = user.head(r.headers['Location'])
         self.assertEqual(r.status_code, 200)
@@ -656,7 +656,7 @@ class TestPatterns(unittest.TestCase):
         self.assertRedirected(user, r, '/tugboat/classicSearchRedirect?qsearch=Shankland%2C+p&amp;version=1')
         
         r = user.head(r.headers['Location'])
-        self.assertRedirected(user, r, '/search/q=Shankland%2C+p&sort=date%20desc%2C%20bibcode%20desc&unprocessed_parameter=One%20or%20more%20weighted%20parameter%28s%29/', 302)
+        self.assertRedirected(user, r, '/search/q=Shankland%2C+p&sort=date%20desc%2C%20bibcode%20desc/', 302)
         
         r = user.head(r.headers['Location'])
         self.assertEqual(r.status_code, 200)
