@@ -389,7 +389,7 @@ class TestPatterns(unittest.TestCase):
         self.assertRedirected(user, r, '/tugboat/classicSearchRedirect?return_req=no_params&author=Mattor,%20Nathan&db_key=PHY') # fails right now...
         
         r = user.head(r.headers['Location'])
-        self.assertRedirected(user, r, '/search/filter_database_fq_database=OR&filter_database_fq_database=database:"physics"&q=author%3A(%22Mattor%2C%20Nathan%22)&fq=%7B!type%3Daqp%20v%3D%24fq_database%7D&fq_database=(database%3A%22physics%22)&sort=date%20desc%2C%20bibcode%20desc&error_message=UNRECOGNIZABLE_VALUE&unprocessed_parameter=return_req/', 302)
+        self.assertRedirected(user, r, '/search/filter_database_fq_database=OR&filter_database_fq_database=database:"physics"&q=author%3A(%22Mattor%2C%20Nathan%22)&fq=%7B!type%3Daqp%20v%3D%24fq_database%7D&fq_database=(database%3A%22physics%22)&sort=date%20desc%2C%20bibcode%20desc/', 302)
         
         # GS, TH: page loads, finds 48 results, but there is a warning 'Invalid value for parameter supplied'
         r = user.head(r.headers['Location'])
