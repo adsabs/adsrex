@@ -57,7 +57,7 @@ class TestIt(unittest.TestCase):
         assert r.json()['responseHeader']['params']['q'] == '*:*'
         assert r.json()['responseHeader']['params']['fl'] == 'id'
         assert r.json()['response']
-        assert r.json()['response']['numFound'] > 14000000 # as of dec 4 2019
+        assert r.json()['response']['numFound'] > 15000000 # as of Feb 2021: 15207970
         self.assertAlmostEqual(r.json()['response']['numFound'], int(numFound), delta=1000000)
         
         r = authenticated_user.get('/vault/execute_query/%s?fl=recid' % qid)
