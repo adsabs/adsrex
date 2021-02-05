@@ -431,7 +431,7 @@ class TestPatterns(unittest.TestCase):
         
         r = user.get(r.headers['Location'])
 
-        self.assertRedirected(user, r, '/search/filter_database_fq_database%3DOR%26filter_database_fq_database%3Ddatabase:%22astronomy%22%26filter_database_fq_database%3Ddatabase:%22physics%22%26q%3D%3Dauthor%3A%28%22Douglas%2C%20A.%20Vibert%22%20OR%20%22Douglas%2C%20A.%20V.%22%29%20AND%20pubdate%3A%5B%2A%20TO%201982-12%5D%26fq%3D%7B%21type%3Daqp%20v%3D%24fq_database%7D%26fq_database%3D%28database%3A%22astronomy%22%20OR%20database%3A%22physics%22%29%26sort%3Ddate%20desc%2C%20bibcode%20desc%26unprocessed_parameter%3DParameters%20not%20processed%3A%20obj_logic/', 302)
+        self.assertRedirected(user, r, '/search/filter_database_fq_database=OR&filter_database_fq_database=database:%22astronomy%22&filter_database_fq_database=database:%22physics%22&q=%3Dauthor%3A(%22Douglas%2C%20A.%20Vibert%22%20OR%20%22Douglas%2C%20A.%20V.%22)%20AND%20pubdate%3A%5B%2A%20TO%201982-12%5D&fq=%7B!type%3Daqp%20v%3D%24fq_database%7D&fq_database=(database%3A%22astronomy%22%20OR%20database%3A%22physics%22)&sort=date%20desc%2C%20bibcode%20desc&unprocessed_parameter=Parameters%20not%20processed%3A%20obj_logic/', 302)
 
         # we now display warnings about the use of AND operator
         r = user.head(r.headers['Location'])
