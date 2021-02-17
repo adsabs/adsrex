@@ -31,7 +31,7 @@ class GraphicsServiceTest(unittest.TestCase):
         # The list of figures should not be empty
         self.assertTrue(len(data['figures']) > 0)
         # A figure in the list of figures should have expected attributes
-        expected_attr = ['images', 'figure_caption', 'figure_label', 'figure_id']
+        expected_attr = ['images', 'figure_id', 'figure_label', 'figure_caption']
         self.assertListEqual(list(data['figures'][0].keys()), expected_attr)
         # The attribute 'images' refers to a list
         self.assertIsInstance(data['figures'][0]['images'], list)
