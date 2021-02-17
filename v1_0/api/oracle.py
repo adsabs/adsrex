@@ -6,12 +6,12 @@ import json
 class OracleServiceTest(unittest.TestCase):
     def test_anonymous_user(self):
         data = {"reader":"0000000000000000"}
-        r = anonymous_user.post('/_oracle/readhist', json=data)
+        r = anonymous_user.post('/oracle/readhist', json=data)
         self.assertEqual(r.status_code, 401)
 
     def check_oracle_service(self, user=authenticated_user):
         data = {"reader": "0000000000000000"}
-        r = user.post('/_oracle/readhist', json=data)
+        r = user.post('/oracle/readhist', json=data)
         print(r.json())
         self.assertTrue(r.json() == {'query': '(similar(topn(10, reader:0000000000000000, entry_date desc)) entdate:[NOW-5DAYS TO *])', 'error': 'no result from solr with status code=200'})
 
