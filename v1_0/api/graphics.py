@@ -1,7 +1,7 @@
 from v1_0.user_roles import anonymous_user, authenticated_user, bumblebee_user
 import unittest
     
-bibcode = '1995ApJ...447L..37W'
+bibcode = '2012ApJ...750L..25J'
     
 class GraphicsServiceTest(unittest.TestCase):
     def test_anonymous_user(self):
