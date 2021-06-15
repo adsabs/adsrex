@@ -122,7 +122,7 @@ class TestPatterns(unittest.TestCase):
         
         r = user.get(r.headers['Location'])
         self.assertTrue(r.status_code, 200)
-        self.assertRedirected(user, r, 'http://stacks.iop.org/0004-637X/760/34/pdf', 302)
+        self.assertRedirected(user, r, 'http://iopscience.iop.org/article/10.1088/0004-637X/760/1/34/pdf', 302)
     
     
     def test_url_005(self, user=anonymous_user_classic):
