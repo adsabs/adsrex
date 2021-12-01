@@ -1,7 +1,7 @@
 
 # The main endpoint including the version, ie. https://api.adsabs.harvard.edu/v1 
 BBB_URL = 'https://ui.adsabs.harvard.edu'
-CLASSIC_URL = 'http://adsabs.harvard.edu'
+CLASSIC_URL = 'https://adsabs.harvard.edu'
 
 # e.g. access token to tester@ads (on staging)
 AUTHENTICATED_USER_EMAIL = 'tester@ads'

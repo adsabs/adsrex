@@ -168,7 +168,7 @@ class TestPatterns(unittest.TestCase):
         """
         r = user.get('/full/1995ESASP.371...79M')
         self.assertEqual(r.status_code, 200)
-        self.assertTrue('http://articles.adsabs.harvard.edu/seri/ESASP/0371//1995ESASP.371...79M.html' in r.text)
+        self.assertTrue('https://articles.adsabs.harvard.edu/seri/ESASP/0371//1995ESASP.371...79M.html' in r.text)
     
     
     def test_url_009(self, user=anonymous_user_classic):
@@ -185,7 +185,7 @@ class TestPatterns(unittest.TestCase):
         """
         r = user.get('/full/1951C&T....67....1B/0000008.000.html')
         self.assertEqual(r.status_code, 200)
-        self.assertTrue('<frame src="http://articles.adsabs.harvard.edu/full/gif/1951C%26T....67....1B/0000008.000.html" name="gif">' in r.text)
+        self.assertTrue('<frame src="https://articles.adsabs.harvard.edu/full/gif/1951C%26T....67....1B/0000008.000.html" name="gif">' in r.text)
     
     
     def test_url_011(self, user=anonymous_user_classic):
