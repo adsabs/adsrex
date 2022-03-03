@@ -291,7 +291,10 @@ class TestPatterns(unittest.TestCase):
         (021) /pdf<0/19> freq=103256 (internal traffic: 0.04, orig_status=200)
         """
         r = user.get('/pdf/1990ApJ...359..267K')
-        self.assertEqual(r.status_code, 200)
+        self.assertEqual(r.status_code, 301)
+        # check if redirects to our pdfs and if bibcode is in lowercase
+        self.assertEqual(r.headers['Location'], 'https://adsabs.harvard.edu/pdf/1990apj...359..267k')
+
         # AA: classic is however wrong, in the header it says it's html where in fact it is PDF...
         # I guess we dont care
         # self.assertEquals(r.headers['Content-Type'], 'text/html; charset=UTF-8')
@@ -410,8 +413,9 @@ class TestPatterns(unittest.TestCase):
         self.assertRedirected(user, r, '/abs/2019arXiv190502773B?db_key=PRE&data_type=BIBTEX&nocookieset=1')
         
         r = user.head(r.headers['Location'])
-        self.assertEqual(r.status_code, 200)
-        self.assertEqual(r.headers['Content-Type'], 'text/html; charset=utf-8')
+        self.assertEqual(r.status_code, 301)
+        # Check if the redirect is to correct bibcode and our frontend
+        self.assertEqual(r.headers['Location'], 'https://ui.adsabs.harvard.edu/abs/2019arXiv190502773C/abstract')
     
     
     def test_url_030(self, user=anonymous_user_classic):
