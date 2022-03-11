@@ -1,9 +1,10 @@
-git+https://github.com/adsabs/ADSMicroserviceUtils.git@v1.1.6
-requests==2.20.0
+git+https://github.com/adsabs/ADSMicroserviceUtils.git@v1.2.1
+requests==2.25.1
 mock
 httpretty
 coveralls
 pytest
 coverage
 pytest-cov
-six==1.14.0
+six==1.15.0
+itsdangerous==2.0.1
