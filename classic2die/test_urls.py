@@ -122,7 +122,7 @@ class TestPatterns(unittest.TestCase):
         
         r = user.get(r.headers['Location'])
         self.assertTrue(r.status_code, 200)
-        self.assertRedirected(user, r, 'http://iopscience.iop.org/article/10.1088/0004-637X/760/1/34/pdf', 302)
+        self.assertRedirected(user, r, 'https://iopscience.iop.org/article/10.1088/0004-637X/760/1/34/pdf', 302)
     
     
     def test_url_005(self, user=anonymous_user_classic):
@@ -266,7 +266,7 @@ class TestPatterns(unittest.TestCase):
         """
         r = user.get('/abs_doc/classic_form_analytics.js')
         self.assertEqual(r.status_code, 200)
-        self.assertEqual(r.headers['Content-Type'], 'text/javascript')
+        self.assertEqual(r.headers['Content-Type'], 'application/javascript')
     
     def test_url_019(self, user=anonymous_user_classic):
         """
@@ -409,7 +409,7 @@ class TestPatterns(unittest.TestCase):
         (029) /cgi-bin/nph-bib_query?<params> freq=75411 (internal traffic: 0.68, orig_status=200)
         """
         r = user.get('/cgi-bin/nph-bib_query?bibcode=2019arXiv190502773B&data_type=BIBTEX&db_key=PRE&nocookieset=1')
-        self.assertRedirected(user, r, '/abs/2019arXiv190502773B?db_key=PRE&data_type=BIBTEX&nocookieset=1')
+        self.assertRedirected(user, r, '/abs/2019arXiv190502773B?nocookieset=1&db_key=PRE&data_type=BIBTEX')
         
         r = user.head(r.headers['Location'])
         self.assertEqual(r.status_code, 301)
@@ -680,7 +680,7 @@ class TestPatterns(unittest.TestCase):
         """
         r = user.get('/abs_doc/classic_form_analytics.js')
         self.assertEqual(r.status_code, 200)
-        self.assertEqual(r.headers['Content-Type'], 'text/javascript')
+        self.assertEqual(r.headers['Content-Type'], 'application/javascript')
     
     
     def test_url_052(self, user=anonymous_user_classic):
