@@ -409,7 +409,7 @@ class TestPatterns(unittest.TestCase):
         (029) /cgi-bin/nph-bib_query?<params> freq=75411 (internal traffic: 0.68, orig_status=200)
         """
         r = user.get('/cgi-bin/nph-bib_query?bibcode=2019arXiv190502773B&data_type=BIBTEX&db_key=PRE&nocookieset=1')
-        self.assertRedirected(user, r, '/abs/2019arXiv190502773B?nocookieset=1&db_key=PRE&data_type=BIBTEX')
+        self.assertRedirected(user, r, '/abs/2019arXiv190502773B?data_type=BIBTEX&nocookieset=1&db_key=PRE')
         
         r = user.head(r.headers['Location'])
         self.assertEqual(r.status_code, 301)
@@ -503,7 +503,7 @@ class TestPatterns(unittest.TestCase):
         """
         r = user.options('*')
         self.assertEqual(r.status_code, 200)
-        self.assertEqual(r.headers['Allow'], 'GET,HEAD,POST,OPTIONS,TRACE')
+        self.assertEqual(r.headers['Allow'], 'GET,POST,OPTIONS,HEAD,TRACE')
     
     
     def test_url_036(self, user=anonymous_user_classic):
